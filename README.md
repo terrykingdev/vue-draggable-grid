@@ -5,8 +5,9 @@ Didn't have much luck finding one of the draggable libraries that handled respon
 Vue2 + vuetify
 
 To do:
-* Show the item being visually dragged
-* Add animation for the positioning
+Single click error
+Handle dragging outside of container
+
 
 ## Project setup
 ```
