@@ -9,6 +9,7 @@ Vue2 + vuetify
 To do:
 * If you drag a thin element and move too fast the element gets 'left behind'. Probably something to do with event bubbling. Need to look into it.
 * Add touch support
+* Cursor doesn't behave
 
 ## Project setup
 ```

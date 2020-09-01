@@ -28,11 +28,11 @@
         </v-col>
       </v-row>
     </v-container>
-    <!--div
+    <div
       class="overlay"
       v-for="(box,index) in collisionBoxes" :key="index"
       :style="`left:${box.left}px;top:${box.top}px;width:${box.width}px;height:${box.height}px;`"
-      ></div-->
+      ></div>
   </v-app>
 </template>
 
