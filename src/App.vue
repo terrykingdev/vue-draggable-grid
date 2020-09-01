@@ -2,15 +2,7 @@
   <v-app>
     <v-container>
 
-      <v-row @mousemove='mousemove' @mousedown.stop.prevent='mousedown' @mouseup='mouseup'>
-      <v-card
-        v-if="draggedItem"
-        class="draggeditem"
-        :style="`position:absolute;left:${draggedItemInfo.posX}px;top:${draggedItemInfo.posY}px;width:${draggedItemInfo.width}px;height:${draggedItemInfo.height}px;`"
-        elevation="15"
-        >
-          <component :is="draggedItem.name" v-bind="draggedItem.props"/>
-      </v-card>
+      <v-row @mousemove='mousemove' @mousedown='mousedown' @mouseup='mouseup' @touchstart='touchstart' @touchend='touchend' @touchmove='touchmove'>
         <v-col
             v-for="(item,index) in cards" :key="index"
             v-bind="item.cols"
@@ -24,6 +16,14 @@
                 <component v-if="!item.blank" :is="item.name" v-bind="item.props"/>
             </v-card>    
         </v-col>
+        <v-card
+          v-if="draggedItem"
+          class="draggeditem"
+          :style="`position:absolute;left:${draggedItemInfo.posX}px;top:${draggedItemInfo.posY}px;width:${draggedItemInfo.width}px;height:${draggedItemInfo.height}px;`"
+          elevation="15"
+          >
+            <component :is="draggedItem.name" v-bind="draggedItem.props"/>
+        </v-card>
       </v-row>
 
     </v-container>
@@ -129,6 +129,10 @@ export default {
     newIndex: -1,
     draggedItem: null,
     draggedItemInfo: null,
+    pickDelay: null,
+    touchDrag: false,
+    touchStartX: null,
+    touchStartY: null,
   }),
   mounted(){
     // Get the custom order from localStorage
@@ -138,8 +142,47 @@ export default {
     }
   },
   methods: {
+    touchstart(e){
+      // Setup a slight delay to avoid accidental moving of items when trying to scroll. So touch devices need to hold the item for a fraction
+      // of a second before it gets 'picked up'.
+      this.pickDelay = setTimeout(()=>{
+        this.touchDrag=true
+        e.clientX = e.changedTouches[0].clientX
+        e.clientY = e.changedTouches[0].clientY
+        this.touchStartX = e.clientX
+        this.touchStartY = e.clientY
+        this.mousedown(e)
+      },200)
+    },
+    touchend(e){
+      clearTimeout(this.pickDelay)
+      e.clientX = e.changedTouches[0].clientX
+      e.clientY = e.changedTouches[0].clientY
+      this.mouseup(e)
+      this.touchDrag=false
+    },
+    touchmove(e){
+      if (this.touchDrag){
+        // Definitely dragging and not scrolling
+        e.clientX = e.changedTouches[0].clientX
+        e.clientY = e.changedTouches[0].clientY
+        this.mousemove(e)
+        // Stop scrolling by preventing default propagation
+        e.preventDefault()
+      } else {
+        let dx = e.changedTouches[0].clientX-this.touchStartX
+        let dy = e.changedTouches[0].clientY-this.touchStartY
+        let dist = Math.sqrt(dx*dx+dy*dy)
+        if (dist>20){
+          // If we've moved more than the dist before the timer runs out we must be scrolling so cancel the timer and allow the event to propagate
+          clearTimeout(this.pickDelay)
+        }
+      }
+    },
     getBox(e){
-        let found = this.collisionBoxes.findIndex(box => e.clientX >= box.left && e.clientX <= box.right && e.clientY >= box.top && e.clientY <= box.bottom)
+      let x=e.clientX+window.scrollX
+      let y=e.clientY+window.scrollY
+        let found = this.collisionBoxes.findIndex(box => x >= box.left && x <= box.right && y >= box.top && y <= box.bottom)
         // Why to a string? Strange behaviour when it isn't, need to look into it.
         return found>=0?found.toString():null
     },
@@ -162,7 +205,10 @@ export default {
     },
     mousedown(e){
       // Cycle through the column grid using $refs and get the elements bounding box coordinates
-      this.collisionBoxes = this.$refs.cards.map(x => x.$el.getBoundingClientRect()) // array of box collisions
+      this.collisionBoxes = this.$refs.cards.map(x => {
+        let bb=x.$el.getBoundingClientRect()
+        return {left:bb.left, top:bb.top+window.scrollY, right:bb.right, bottom:bb.bottom+window.scrollY, width:bb.width, height:bb.height}
+      }) // array of box collisions
       this.startOrder = Object.assign([],this.cards) // array of original starting order
       this.startIndex = this.getBox(e)
       if (this.startIndex){
@@ -208,6 +254,13 @@ export default {
   pointer-events: none;
 }
 .draggable{
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;  
+  pointer-events: none;
   cursor: -webkit-grab;
   cursor: grab;
 }
@@ -216,6 +269,13 @@ export default {
   100% {transform: rotateZ(1deg) scale(1.05);}
 }
 .draggeditem{
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;  
+  pointer-events: none;
   z-index:1;
   cursor: -webkit-grabbing;
   cursor: grabbing;
