@@ -9,9 +9,8 @@
             >
             <v-card
               ref="cards"
-              :class="item.blank?'grey lighten-2':''"
               :style="item.blank?`width:${draggedItemInfo.width}px;height:${draggedItemInfo.height}px;`:''"
-              class="draggable"
+              :class="draggableitem(item)"
               >
                 <component v-if="!item.blank" :is="item.name" v-bind="item.props"/>
             </v-card>    
@@ -135,6 +134,7 @@ export default {
     touchStartY: null,
   }),
   mounted(){
+    console.log(this.is_touch_device())
     // Get the custom order from localStorage
     let order=localStorage.getItem('cardOrder')
     if (order){
@@ -142,6 +142,16 @@ export default {
     }
   },
   methods: {
+    draggableitem(item){
+      let r='draggable'
+      if (this.is_touch_device()){
+        r+=' disableevents'
+      }
+      if (item.blank){
+        r+=' grey lighten-2'
+      }
+      return r
+    },
     touchstart(e){
       // Setup a slight delay to avoid accidental moving of items when trying to scroll. So touch devices need to hold the item for a fraction
       // of a second before it gets 'picked up'.
@@ -239,6 +249,19 @@ export default {
         this.collisionBoxes = []
       }
     },
+    is_touch_device() {
+        var prefixes = ' -webkit- -moz- -o- -ms- '.split(' ');
+        var mq = function (query) {
+            return window.matchMedia(query).matches;
+        }
+        if (('ontouchstart' in window) || window.DocumentTouch) {
+            return true;
+        }
+        // include the 'heartz' as a way to have a non matching MQ to help terminate the join
+        // https://git.io/vznFH
+        var query = ['(', prefixes.join('touch-enabled),('), 'heartz', ')'].join('');
+        return mq(query);
+    }    
   }
 };
 </script>
@@ -260,9 +283,11 @@ export default {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;  
-  pointer-events: none;
   cursor: -webkit-grab;
   cursor: grab;
+}
+.disableevents{
+  pointer-events: none;
 }
 @keyframes chosen{
   0% {transform: rotateZ(0deg) scale(1);}
@@ -275,7 +300,6 @@ export default {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;  
-  pointer-events: none;
   z-index:1;
   cursor: -webkit-grabbing;
   cursor: grabbing;
