@@ -9,24 +9,21 @@
         :class="cardColour(draggedItem)"
         :style="getDraggedStyle()"
         elevation="15"
-        dark
         >
-          <component :is="draggedItem.component" :text="draggedItem.text"/>
+          <component :is="draggedItem.name" v-bind="draggedItem.props"/>
       </v-card>
         <v-col
             v-for="(item,index) in cards" :key="index"
-            :cols="item.cols"
-            :md="item.md"
-            :lg="item.lg"
+            v-bind="item.cols"
             >
             <v-card
               :ref="index"
               :class="cardColour(item)"
               :style="cardStyle(item)"
               class="draggable"
-              dark
               >
-                <component :is="item.component" :text="item.text"/>
+                <!-- blank item doesn't have a name -->
+                <component v-if="item.name" :is="item.name" v-bind="item.props"/>
             </v-card>    
         </v-col>
       </v-row>
@@ -42,6 +39,7 @@
 <script>
 import Card1 from './components/Card1'
 import Card2 from './components/Card2'
+import Card3 from './components/Card3'
 
 export default {
   name: 'App',
@@ -49,34 +47,80 @@ export default {
   },  
   data: () => ({
     cards: [
-      { cols:12, md:6, lg:4, text: "Item 1 cols:12, md:6, lg:4", component: Card1},
-      { cols:12, md:6, lg:4, text: "Item 2 cols:12, md:6, lg:4", component: Card2},
-      { cols:12, md:6, lg:4, text: "Item 3 cols:12, md:6, lg:4", component: Card1},
-      { cols:12, md:12, lg:6, text: "Item 4 cols:12, md:12, lg:6", component: Card1},
-      { cols:12, md:12, lg:6, text: "Item 5 cols:12, md:12, lg:6", component: Card1},
-      { cols:12, md:12, lg:12, text: "Item 6 cols:12, md:12, lg:12", component: Card1},
-      // { id:1, cols:3, text: "1 cols3"},
-      // { id:2, cols:3, text: "2 cols3"},
-      // { id:3, cols:3, text: "3 cols3"},
-      // { id:4, cols:3, text: "4 cols3"},
-      // { id:5, cols:3, text: "5 cols3"},
-      // { id:6, cols:3, text: "6 cols3"},
-      // { id:7, cols:3, text: "7 cols3"},
-      // { id:8, cols:3, text: "8 cols3"},
-      // { id:9, cols:3, text: "9 cols3"},
-      // { id:10, cols:3, text: "10 cols3"},
-      // { id:11, cols:3, text: "11 cols3"},
-      // { id:12, cols:3, text: "12 cols3"},
-      // { id:13, cols:3, text: "13 cols3"},
-      // { id:14, cols:3, text: "14 cols3"},
-      // { id:15, cols:3, text: "15 cols3"},
-      // { id:16, cols:3, text: "16 cols3"},
+      {
+        cols:{
+          cols:12,
+          md:6,
+          lg:4
+        },
+        name: Card1,
+        props: {
+          title:'Title 1',
+          text:'Item 1 cols:12, md:6, lg:4'
+        }
+      },
+      {
+        cols:{
+          cols:12,
+          md:6,
+          lg:4
+        },
+        name: Card1,
+        props: {
+          title:'Title 2',
+          text:'Item 1 cols:12, md:6, lg:4'
+        }
+      },
+        {
+        cols:{
+          cols:12,
+          md:6,
+          lg:4
+        },
+        name: Card1,
+        props: {
+          title:'Title 3',
+          text:'Item 1 cols:12, md:6, lg:4'
+        }
+      },
+      { 
+        cols:{
+          cols:12,
+          md:6,
+        },
+        name: Card2,
+        props: {
+          content:'Content 1'
+        }
+      },
+      { 
+        cols:{
+          cols:12,
+          md:6,
+        },
+        name: Card2,
+        props: {
+          content:'Content 2'
+        }
+      },
+      { 
+        cols:{
+          cols:12,
+        },
+        name: Card3,
+        props: {
+          list:[
+            {title: 'Item 1'},
+            {title: 'Item 2'},
+            {title: 'Item 3'},
+          ]
+        }
+      },      
     ],
     collisionBoxes: [],
     startOrder: [],
     startIndex: null,
     currentIndex: null,
-    dragging: false,
     newIndex: -1,
     draggedItem: null,
     draggedItemInfo: null,
@@ -97,7 +141,7 @@ export default {
       if (item.blank){
         return "grey lighten-2"
       } else {
-        return "primary pa-2"
+        return ""
       }
     },
     getBox(e){
@@ -106,10 +150,9 @@ export default {
         return found>=0?found.toString():null
     },
     mousemove(e){
-      if (this.dragging){
+      if (this.draggedItem){
         this.draggedItemInfo.posX = e.clientX-this.draggedItemInfo.offsetX
         this.draggedItemInfo.posY = e.clientY-this.draggedItemInfo.offsetY
-
         // Get the box your mouse is currently over
         let found = this.getBox(e)
         if (found && found!=this.currentIndex){
@@ -121,9 +164,7 @@ export default {
               newcards.push(this.startOrder[i])
             }
           }
-          console.log('inserting into pos '+found)
           newcards.splice(found,0,{ cols:this.draggedItem.cols, md:this.draggedItem.md, lg:this.draggedItem.lg, blank:true}) // insert blank
-
           // Update cards with the new order and vue updates visually
           this.cards = newcards
           this.currentIndex=found
@@ -131,35 +172,36 @@ export default {
       }
     },
     mousedown(e){
-      this.dragging = true
       this.calc()
       this.startIndex = this.getBox(e)
-      this.currentIndex = this.startIndex
-      this.newIndex = this.startIndex
-      this.cards[this.startIndex].absolute = true // flag the selected card for absolute positioning
-      this.draggedItem = this.cards.splice(this.startIndex,1)[0] // remove item clicked on
-      let box = this.collisionBoxes[this.startIndex]
-      this.draggedItemInfo = {
-        width: box.width,
-        height: box.height,
-        offsetX: e.clientX-box.left,
-        offsetY: e.clientY-box.top,
-        posX: e.clientX-(e.clientX-box.left),
-        posY: e.clientY-(e.clientY-box.top)
+      if (this.startIndex){
+        this.currentIndex = this.startIndex
+        this.newIndex = this.startIndex
+        this.cards[this.startIndex].absolute = true // flag the selected card for absolute positioning
+        this.draggedItem = this.cards.splice(this.startIndex,1)[0] // remove item clicked on
+        let box = this.collisionBoxes[this.startIndex]
+        this.draggedItemInfo = {
+          width: box.width,
+          height: box.height,
+          offsetX: e.clientX-box.left,
+          offsetY: e.clientY-box.top,
+          posX: e.clientX-(e.clientX-box.left),
+          posY: e.clientY-(e.clientY-box.top)
+        }
+        this.cards.splice(this.startIndex,0,{ cols:this.draggedItem.cols, md:this.draggedItem.md, lg:this.draggedItem.lg, blank:true}) // insert blank
       }
-      this.cards.splice(this.startIndex,0,{ cols:this.draggedItem.cols, md:this.draggedItem.md, lg:this.draggedItem.lg, blank:true}) // insert blank
     },
     mouseup(){
-      console.log('mouseup',this.newIndex,this.startIndex)
-      if (!this.newIndex){
-        this.newIndex = this.startIndex
+      if (this.draggedItem){
+        if (!this.newIndex){
+          this.newIndex = this.startIndex
+        }
+        this.draggedItem.absolute = null
+        this.cards.splice(this.newIndex,1) // delete blank
+        this.cards.splice(this.newIndex,0,this.draggedItem) // insert original item
+        this.draggedItem = null
+        this.collisionBoxes = []
       }
-      this.draggedItem.absolute = null
-      this.cards.splice(this.newIndex,1) // delete blank
-      this.cards.splice(this.newIndex,0,this.draggedItem) // insert original item
-      this.draggedItem = null
-      this.dragging = false
-      this.collisionBoxes = []
     },
     calc(){
       // Cycle through the column grid using $refs and get the elements bounding box coordinates
@@ -167,8 +209,7 @@ export default {
       let so=[]
       for(let i in this.$refs){
         let ref=this.$refs[i][0]
-        let bb=ref.$el.getBoundingClientRect()
-        bbs.push(bb)
+        bbs.push(ref.$el.getBoundingClientRect())
       }
       for(let card of this.cards){
         so.push(card)

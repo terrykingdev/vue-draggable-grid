@@ -1,11 +1,15 @@
 <template>
-    <div
-        class="primary"
-        style="height:100px;"
+    <v-card
+        class="primary pa-2"
+        dark
         >
-        {{ title }}
-        {{ text }}
-    </div>
+        <v-card-title>
+            {{ title }}
+        </v-card-title>
+        <v-card-text>
+            {{ text }}
+        </v-card-text>
+    </v-card>
 </template>
 
 <script>

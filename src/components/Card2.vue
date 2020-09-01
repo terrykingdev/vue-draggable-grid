@@ -1,16 +1,15 @@
 <template>
-    <div
-        class="success"
-        style="height:100px;"
+    <v-card
+        class="success pa-2"
+        dark
         >
-        {{ title }}
-        {{ text }}
-    </div>
+        {{ content }}
+    </v-card>
 </template>
 
 <script>
 export default {
     name:'Card2',
-    props: ['title','text']
+    props: ['content']
 }
 </script>
