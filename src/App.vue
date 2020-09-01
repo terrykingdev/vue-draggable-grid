@@ -28,11 +28,11 @@
         </v-col>
       </v-row>
     </v-container>
-    <div
+    <!--div
       class="overlay"
       v-for="(box,index) in collisionBoxes" :key="index"
       :style="`left:${box.left}px;top:${box.top}px;width:${box.width}px;height:${box.height}px;`"
-      ></div>
+      ></div-->
   </v-app>
 </template>
 
@@ -139,9 +139,9 @@ export default {
     },
     cardColour(item){
       if (item.blank){
-        return "grey lighten-2"
+        return 'grey lighten-2'
       } else {
-        return ""
+        return ''
       }
     },
     getBox(e){
@@ -164,7 +164,7 @@ export default {
               newcards.push(this.startOrder[i])
             }
           }
-          newcards.splice(found,0,{ cols:this.draggedItem.cols, md:this.draggedItem.md, lg:this.draggedItem.lg, blank:true}) // insert blank
+          newcards.splice(found,0,{ blank:true}) // insert blank
           // Update cards with the new order and vue updates visually
           this.cards = newcards
           this.currentIndex=found
@@ -177,8 +177,8 @@ export default {
       if (this.startIndex){
         this.currentIndex = this.startIndex
         this.newIndex = this.startIndex
-        this.cards[this.startIndex].absolute = true // flag the selected card for absolute positioning
-        this.draggedItem = this.cards.splice(this.startIndex,1)[0] // remove item clicked on
+//        this.cards[this.startIndex].absolute = true // flag the selected card for absolute positioning
+        this.draggedItem = this.cards.splice(this.startIndex,1)[0] // remove the item clicked on and assign it to the dragged item
         let box = this.collisionBoxes[this.startIndex]
         this.draggedItemInfo = {
           width: box.width,
@@ -188,7 +188,7 @@ export default {
           posX: e.clientX-(e.clientX-box.left),
           posY: e.clientY-(e.clientY-box.top)
         }
-        this.cards.splice(this.startIndex,0,{ cols:this.draggedItem.cols, md:this.draggedItem.md, lg:this.draggedItem.lg, blank:true}) // insert blank
+        this.cards.splice(this.startIndex,0,{ blank:true }) // insert blank
       }
     },
     mouseup(){
@@ -196,7 +196,6 @@ export default {
         if (!this.newIndex){
           this.newIndex = this.startIndex
         }
-        this.draggedItem.absolute = null
         this.cards.splice(this.newIndex,1) // delete blank
         this.cards.splice(this.newIndex,0,this.draggedItem) // insert original item
         this.draggedItem = null
@@ -222,9 +221,6 @@ export default {
 </script>
 
 <style scoped>
-.anim{
-  transition: all 0.5s ease-in;
-}
 .overlay{
   position:absolute;
   left:0;
@@ -238,10 +234,17 @@ export default {
   cursor: -webkit-grab;
   cursor: grab;
 }
+@keyframes chosen{
+  0% {transform: rotateZ(0deg) scale(1);}
+  100% {transform: rotateZ(1deg) scale(1.05);}
+}
 .draggeditem{
   z-index:1;
   cursor: -webkit-grabbing;
   cursor: grabbing;
-	transform: rotateZ(1.5deg) scale(1.05);
+  animation-name: chosen;
+  animation-duration: 0.1s;
+  animation-fill-mode: forwards;
+  animation-timing-function: ease-out;
 }
 </style>
