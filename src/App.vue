@@ -6,8 +6,7 @@
       <v-card
         v-if="draggedItem"
         class="draggeditem"
-        :class="cardColour(draggedItem)"
-        :style="getDraggedStyle()"
+        :style="`position:absolute;left:${draggedItemInfo.posX}px;top:${draggedItemInfo.posY}px;width:${draggedItemInfo.width}px;height:${draggedItemInfo.height}px;`"
         elevation="15"
         >
           <component :is="draggedItem.name" v-bind="draggedItem.props"/>
@@ -17,16 +16,16 @@
             v-bind="item.cols"
             >
             <v-card
-              :ref="index"
-              :class="cardColour(item)"
-              :style="cardStyle(item)"
+              ref="cards"
+              :class="item.blank?'grey lighten-2':''"
+              :style="item.blank?`width:${draggedItemInfo.width}px;height:${draggedItemInfo.height}px;`:''"
               class="draggable"
               >
-                <!-- blank item doesn't have a name -->
-                <component v-if="item.name" :is="item.name" v-bind="item.props"/>
+                <component v-if="!item.blank" :is="item.name" v-bind="item.props"/>
             </v-card>    
         </v-col>
       </v-row>
+
     </v-container>
     <!--div
       class="overlay"
@@ -48,6 +47,7 @@ export default {
   data: () => ({
     cards: [
       {
+        id:0,
         cols:{
           cols:12,
           md:6,
@@ -60,6 +60,7 @@ export default {
         }
       },
       {
+        id:1,
         cols:{
           cols:12,
           md:6,
@@ -71,7 +72,8 @@ export default {
           text:'Item 1 cols:12, md:6, lg:4'
         }
       },
-        {
+      {
+        id:2,
         cols:{
           cols:12,
           md:6,
@@ -84,6 +86,7 @@ export default {
         }
       },
       { 
+        id:3,
         cols:{
           cols:12,
           md:6,
@@ -94,6 +97,7 @@ export default {
         }
       },
       { 
+        id:4,
         cols:{
           cols:12,
           md:6,
@@ -104,6 +108,7 @@ export default {
         }
       },
       { 
+        id:'large',
         cols:{
           cols:12,
         },
@@ -125,25 +130,14 @@ export default {
     draggedItem: null,
     draggedItemInfo: null,
   }),
+  mounted(){
+    // Get the custom order from localStorage
+    let order=localStorage.getItem('cardOrder')
+    if (order){
+      this.cards = order.split(',').map(x => this.cards.filter(c => c.id == x)[0])
+    }
+  },
   methods: {
-    cardStyle(item){
-      if (item.blank){
-        // Make the blanked item the same width and height as the dragged
-        return `width:${this.draggedItemInfo.width}px;height:${this.draggedItemInfo.height}px;`
-      } else {
-        return ''
-      }
-    },
-    getDraggedStyle(){
-      return `position:absolute;left:${this.draggedItemInfo.posX}px;top:${this.draggedItemInfo.posY}px;width:${this.draggedItemInfo.width}px;height:${this.draggedItemInfo.height}px;`
-    },
-    cardColour(item){
-      if (item.blank){
-        return 'grey lighten-2'
-      } else {
-        return ''
-      }
-    },
     getBox(e){
         let found = this.collisionBoxes.findIndex(box => e.clientX >= box.left && e.clientX <= box.right && e.clientY >= box.top && e.clientY <= box.bottom)
         // Why to a string? Strange behaviour when it isn't, need to look into it.
@@ -155,29 +149,26 @@ export default {
         this.draggedItemInfo.posY = e.clientY-this.draggedItemInfo.offsetY
         // Get the box your mouse is currently over
         let found = this.getBox(e)
-        if (found && found!=this.currentIndex){
+        if (found && found != this.currentIndex){
           this.newIndex = found
           // Position has changed
-          let newcards=[]
-          for(let i in this.startOrder){
-            if (i != this.startIndex){
-              newcards.push(this.startOrder[i])
-            }
-          }
-          newcards.splice(found,0,{ blank:true}) // insert blank
+          let newcards = this.startOrder.filter((x,i) => i != this.startIndex)
+          newcards.splice(found,0,{ blank:true }) // insert blank
           // Update cards with the new order and vue updates visually
           this.cards = newcards
-          this.currentIndex=found
+          this.currentIndex = found
         }
       }
     },
     mousedown(e){
-      this.calc()
+      // Cycle through the column grid using $refs and get the elements bounding box coordinates
+      this.collisionBoxes = this.$refs.cards.map(x => x.$el.getBoundingClientRect()) // array of box collisions
+      this.startOrder = Object.assign([],this.cards) // array of original starting order
       this.startIndex = this.getBox(e)
       if (this.startIndex){
+        // Clicked in a valid box
         this.currentIndex = this.startIndex
         this.newIndex = this.startIndex
-//        this.cards[this.startIndex].absolute = true // flag the selected card for absolute positioning
         this.draggedItem = this.cards.splice(this.startIndex,1)[0] // remove the item clicked on and assign it to the dragged item
         let box = this.collisionBoxes[this.startIndex]
         this.draggedItemInfo = {
@@ -196,26 +187,12 @@ export default {
         if (!this.newIndex){
           this.newIndex = this.startIndex
         }
-        this.cards.splice(this.newIndex,1) // delete blank
-        this.cards.splice(this.newIndex,0,this.draggedItem) // insert original item
+        this.cards.splice(this.newIndex,1,this.draggedItem) // delete blank and insert original item
+        localStorage.setItem('cardOrder', this.cards.map(x => x.id)) // save the new order in local storage
         this.draggedItem = null
         this.collisionBoxes = []
       }
     },
-    calc(){
-      // Cycle through the column grid using $refs and get the elements bounding box coordinates
-      let bbs=[]
-      let so=[]
-      for(let i in this.$refs){
-        let ref=this.$refs[i][0]
-        bbs.push(ref.$el.getBoundingClientRect())
-      }
-      for(let card of this.cards){
-        so.push(card)
-      }
-      this.startOrder = so // array of original starting order
-      this.collisionBoxes = bbs // array of box collisions
-    }
   }
 };
 </script>

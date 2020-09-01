@@ -6,6 +6,25 @@ Sometimes the behavior can seem weird if you have lots of columns of different w
 
 Vue2 + vuetify
 
+```javascript
+cards: [
+	{
+		id:0,				// Unique id, number or string, doesn't need to be in order
+		cols:{
+			cols:12,  // Column definitions
+			md:6,
+			lg:4
+		},
+		name: Card1, // Component to insert
+		props: {
+			// Put the component props in here
+			title:'Title 1',
+			text:'Item 1 cols:12, md:6, lg:4'
+		}
+	},
+]
+```
+
 To do:
 * If you drag a thin element and move too fast the element gets 'left behind'. Probably something to do with event bubbling. Need to look into it.
 * Add touch support
