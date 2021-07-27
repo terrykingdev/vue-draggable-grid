@@ -247,7 +247,7 @@ export default {
     // Get the custom order from localStorage
     let config=localStorage.getItem('dashboard')
     if (config){
-      let configData = JSON.parse(config)
+      let configData = JSON.parse(atob(config))
       this.cards = []
       for(let data of configData){
         let init = JSON.parse(data)
@@ -311,7 +311,7 @@ export default {
         config.push(JSON.stringify(c.props.initialize))
       }
       console.log("saveToStorage",config)
-      localStorage.setItem('dashboard', JSON.stringify(config))
+      localStorage.setItem('dashboard', btoa(JSON.stringify(config)))
     },
     updateCard(item,data){
       console.log(item,data)
