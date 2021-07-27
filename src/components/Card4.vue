@@ -34,7 +34,7 @@
 
 <script>
 export default {
-    name:'Card3',
+    name:'Card4',
     props: ['initialize'],
     data: () => ({
         cogitem: null,
@@ -50,9 +50,9 @@ export default {
     }),
     mounted(){
         console.log("mounted",JSON.stringify(this.initialize))
-        this.title = this.initialize.title?  this.initialize.title:'Card3 Title'
-        this.text = this.initialize.text?  this.initialize.text:'Card3 Text'
-        this.background = this.initialize.background?  this.initialize.background:'purple'
+        this.title = this.initialize.title?  this.initialize.title:'Card4 Title'
+        this.text = this.initialize.text?  this.initialize.text:'Card4 Text'
+        this.background = this.initialize.background?  this.initialize.background:'indigo'
     },
     computed:{
         getCardClass(){
