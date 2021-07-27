@@ -42,6 +42,7 @@ export default {
         title: '',
         text: '',
         background: null,
+        cols:{cols:12,md:6,lg:4},
         options: [
             {title: "Configure", fnc: "config"},
             {title: "Duplicate", fnc: "duplicate"},
@@ -50,9 +51,12 @@ export default {
     }),
     mounted(){
         console.log("mounted",JSON.stringify(this.initialize))
-        this.title = this.initialize.title?  this.initialize.title:'Card3 Title'
-        this.text = this.initialize.text?  this.initialize.text:'Card3 Text'
-        this.background = this.initialize.background?  this.initialize.background:'purple'
+        if (this.initialize.cols) this.cols = this.initialize.cols
+        this.title = this.initialize.options.title?  this.initialize.options.title:'Card 3'
+        this.text = this.initialize.options.text?  this.initialize.options.text:'Card 3 text'
+        this.background = this.initialize.options.background?  this.initialize.options.background:'indigo'
+        // Need to send the setup straight back after it's mounted
+        this.$emit("update", this.getSetup())
     },
     computed:{
         getCardClass(){
@@ -62,9 +66,13 @@ export default {
     methods: {
         getSetup(){
             return JSON.stringify({
-                title: this.title,
-                text: this.text,
-                background: this.background
+                name: this.$options.name,
+                cols: this.cols,
+                options: {
+                    title: this.title,
+                    text: this.text,
+                    background: this.background
+                }
             })
         },
         addClass(){
@@ -78,6 +86,7 @@ export default {
         },
         config(){
             this.background = 'secondary'
+            this.cols = {cols:6,md:2}
             this.$emit("update", this.getSetup())
         },
         duplicate(){

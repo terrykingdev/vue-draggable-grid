@@ -51,9 +51,12 @@ export default {
     }),
     mounted(){
         console.log("mounted",JSON.stringify(this.initialize))
+        if (this.initialize.cols) this.cols = this.initialize.cols
         this.title = this.initialize.options.title?  this.initialize.options.title:'No title'
         this.text = this.initialize.options.text?  this.initialize.options.text:'No text'
         this.background = this.initialize.options.background?  this.initialize.options.background:'primary'
+        // Need to send the setup straight back after it's mounted
+        this.$emit("update", this.getSetup())
     },
     computed:{
         getCardClass(){
@@ -63,6 +66,7 @@ export default {
     methods: {
         getSetup(){
             return JSON.stringify({
+                name: this.$options.name,
                 cols: this.cols,
                 options: {
                     title: this.title,
@@ -82,6 +86,7 @@ export default {
         },
         config(){
             this.background = 'secondary'
+            this.cols = {cols:6,md:2}
             this.$emit("update", this.getSetup())
         },
         duplicate(){

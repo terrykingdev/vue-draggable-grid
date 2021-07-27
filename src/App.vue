@@ -38,7 +38,7 @@
               :style="item.blank?`width:${draggedItemInfo.width}px;height:${draggedItemInfo.height}px;`:''"
               :class="draggableitem(item)"
               >
-                <component ref="card" v-if="!item.blank" :is="getComponent(item.name)" v-bind="item.props" v-on:remove="removeCard(item)" v-on:duplicate="duplicateCard(item,...arguments)" v-on:update="updateCard(item,...arguments)"/>
+                <component ref="card" :data-index="index" v-if="!item.blank" :is="getComponent(item.name)" v-bind="item.props" v-on:remove="removeCard(item)" v-on:duplicate="duplicateCard(item,...arguments)" v-on:update="updateCard(item,...arguments)"/>
             </v-card>    
         </v-col>
         <v-card
@@ -245,7 +245,25 @@ export default {
   mounted(){
     console.log(this.is_touch_device())
     // Get the custom order from localStorage
-    // let order=localStorage.getItem('cardOrder')
+    let config=localStorage.getItem('dashboard')
+    if (config){
+      let configData = JSON.parse(config)
+      this.cards = []
+      for(let data of configData){
+        let init = JSON.parse(data)
+        console.log(init)
+        let newCard = {
+          name: init.name,
+          props: {
+            initialize:{
+              cols: init.cols,
+              options: init.options
+            }
+          }
+        }
+        this.cards.push(newCard)
+      }
+    }
     // if (order){
     //   this.cards = order.split(',').map(x => this.cards.filter(c => c.id == x)[0])
     // }
@@ -277,27 +295,39 @@ export default {
       }
       console.log(newCard)
       this.cards.push(newCard)
+      this.$nextTick().then(()=>{
+        this.saveToStorage()
+      })
     },
     dump(){
       console.log(this.$refs)
-      for(let c=0;c<this.cards.length;c++){
-        let card=this.cards[c]
-        if (card.name.name=="Card1"){
-          console.log(this.$refs.card[c].getSetup())
-          //console.log(card.getSetup())
-        }
+      for(let c of this.cards){
+        console.log(JSON.stringify(c.props.initialize))
       }
+    },
+    saveToStorage(){
+      let config = []
+      for(let c of this.cards){
+        config.push(JSON.stringify(c.props.initialize))
+      }
+      console.log("saveToStorage",config)
+      localStorage.setItem('dashboard', JSON.stringify(config))
     },
     updateCard(item,data){
       console.log(item,data)
+      // When a card is configured the changes are stored back in the props
       item.props.initialize = JSON.parse(data)
+      this.saveToStorage()
     },
     removeCard(item){
       console.log("remove",item)
       this.startOrder = Object.assign([],this.cards) // array of original starting order
       this.cards = []
       this.$nextTick().then(()=>{
-        this.cards = this.startOrder.filter(c => c.id!=item.id)
+        this.cards = this.startOrder.filter(c => c!=item)
+        this.$nextTick().then(()=>{
+          this.saveToStorage()
+        })
       })
     },
     duplicateCard(item,data){
@@ -318,6 +348,9 @@ export default {
       this.$nextTick().then(()=>{
         this.cards = this.startOrder
         this.cards.splice(index+1,0,copy)
+        this.$nextTick().then(()=>{
+          this.saveToStorage()
+        })
       })
     },
     draggableitem(item){
@@ -403,6 +436,7 @@ export default {
     },
     mousedown(e){
       // Cycle through the column grid using $refs and get the elements bounding box coordinates
+      // The $refs.cards order might not be in the correct order but doesn't matter
       this.collisionBoxes = this.$refs.cards.map(x => {
         let bb=x.$el.getBoundingClientRect()
         return {left:bb.left, top:bb.top+window.scrollY, right:bb.right, bottom:bb.bottom+window.scrollY, width:bb.width, height:bb.height}
@@ -438,6 +472,9 @@ export default {
 //        localStorage.setItem('cardOrder', this.cards.map(x => x.id)) // save the new order in local storage
         this.draggedItem = null
         this.collisionBoxes = []
+        this.$nextTick().then(()=>{
+          this.saveToStorage()
+        })
       }
     },
     is_touch_device() {
