@@ -28,7 +28,7 @@
           </v-list-item-group>
         </v-list>
       </v-menu>
-      <v-row @mousemove='mousemove' @mousedown='mousedown' @mouseup='mouseup' @touchstart='touchstart' @touchend='touchend' @touchmove='touchmove'>
+      <v-row @mousemove='mousemove' @mousedown='mousedown' @mouseup='mouseup'>
         <v-col
             v-for="(item,index) in cards" :key="index"
             v-bind="item.props.initialize.cols"
@@ -38,7 +38,7 @@
               :style="item.blank?`width:${draggedItemInfo.width}px;height:${draggedItemInfo.height}px;`:''"
               :class="draggableitem(item)"
               >
-                <component ref="card" :data-index="index" v-if="!item.blank" :is="getComponent(item.name)" v-bind="item.props" v-on:remove="removeCard(item)" v-on:duplicate="duplicateCard(item,...arguments)" v-on:update="updateCard(item,...arguments)"/>
+                <component v-if="!item.blank" :is="getComponent(item.name)" v-bind="item.props" v-on:remove="removeCard(item)" v-on:duplicate="duplicateCard(item,...arguments)" v-on:update="updateCard(item,...arguments)"/>
             </v-card>    
         </v-col>
         <v-card
@@ -73,10 +73,10 @@ export default {
   },  
   data: () => ({
     addlist:[
-      { title: 'Card1' , name: 'Card1', cols:{cols:12,md:6,lg:4}},
+      { title: 'Card1' , name: 'Card1', cols:{cols:12,md:6,lg:4,xl:3}},
       { title: 'Card2' , name: 'Card2', cols:{cols:12,md:6}},
       { title: 'Card3' , name: 'Card3', cols:{cols:12}},
-      { title: 'Card4' , name: 'Card4', cols:{cols:12}},
+      { title: 'Card4' , name: 'Card4', cols:{cols:12,lg:4}},
     ],
     cards: [
       {
@@ -97,138 +97,6 @@ export default {
           }
         }
       },
-      // {
-      //   id:1,
-      //   cols:{
-      //     cols:12,
-      //     md:6,
-      //     lg:4
-      //   },
-      //   name: Card1,
-      //   props: {
-      //     initialize: {
-      //       title:'Title 2',
-      //       //text:'Item 1 cols:12, md:6, lg:4',
-      //     }
-      //   }
-      // },
-      // {
-      //   id:2,
-      //   cols:{
-      //     cols:12,
-      //     md:6,
-      //     lg:4
-      //   },
-      //   name: Card1,
-      //   props: {
-      //     initialize: {
-      //       title:'Title 3',
-      //       text:'Item 1 cols:12, md:6, lg:4'
-      //     }
-      //   }
-      // },
-      // {
-      //   id:3,
-      //   cols:{
-      //     cols:12,
-      //     md:6,
-      //     lg:4
-      //   },
-      //   name: Card1,
-      //   props: {
-      //     initialize: {
-      //       title:'Title 1',
-      //       text:'Item 1 cols:12, md:6, lg:4',
-      //       background: 'red'
-      //     }
-      //   }
-      // },
-      // {
-      //   id:4,
-      //   cols:{
-      //     cols:12,
-      //     md:6,
-      //     lg:4
-      //   },
-      //   name: Card1,
-      //   props: {
-      //     initialize: {
-      //       title:'Title 2',
-      //       //text:'Item 1 cols:12, md:6, lg:4',
-      //     }
-      //   }
-      // },
-      // {
-      //   id:5,
-      //   cols:{
-      //     cols:12,
-      //     md:6,
-      //     lg:4
-      //   },
-      //   name: Card1,
-      //   props: {
-      //     initialize: {
-      //       title:'Title 3',
-      //       text:'Item 1 cols:12, md:6, lg:4'
-      //     }
-      //   }
-      // },      
-      // { 
-      //   id:3,
-      //   cols:{
-      //     cols:12,
-      //     md:6,
-      //   },
-      //   name: Card2,
-      //   props: {
-      //     content:'Content 1'
-      //   }
-      // },
-      // { 
-      //   id:4,
-      //   cols:{
-      //     cols:12,
-      //     md:6,
-      //   },
-      //   name: Card2,
-      //   props: {
-      //     content:'Content 2'
-      //   }
-      // },
-      // { 
-      //   id:5,
-      //   cols:{
-      //     cols:12,
-      //   },
-      //   name: Card3,
-      //   props: {
-      //     list:[
-      //       {title: 'Item 1'},
-      //       {title: 'Item 2'},
-      //       {title: 'Item 3'},
-      //     ]
-      //   }
-      // },     
-      // { 
-      //   id:6,
-      //   cols:{
-      //     cols:12,
-      //   },
-      //   name: Card4,
-      //   props: {
-      //     list:[
-      //       {title: 'Item 1'},
-      //       {title: 'Item 2'},
-      //       {title: 'Item 3'},
-      //       {title: 'Item 4'},
-      //       {title: 'Item 5'},
-      //       {title: 'Item 6'},
-      //       {title: 'Item 7'},
-      //       {title: 'Item 8'},
-      //       {title: 'Item 9'},
-      //     ]
-      //   }
-      // },        
     ],
     collisionBoxes: [],
     startOrder: [],
@@ -238,12 +106,8 @@ export default {
     draggedItem: null,
     draggedItemInfo: null,
     pickDelay: null,
-    touchDrag: false,
-    touchStartX: null,
-    touchStartY: null,
   }),
   mounted(){
-    console.log(this.is_touch_device())
     // Get the custom order from localStorage
     let config=localStorage.getItem('dashboard')
     if (config){
@@ -264,12 +128,8 @@ export default {
         this.cards.push(newCard)
       }
     }
-    // if (order){
-    //   this.cards = order.split(',').map(x => this.cards.filter(c => c.id == x)[0])
-    // }
   },
   computed: {
-
   },
   methods: {
     getComponent(name){
@@ -293,14 +153,12 @@ export default {
           }
         }
       }
-      console.log(newCard)
       this.cards.push(newCard)
       this.$nextTick().then(()=>{
         this.saveToStorage()
       })
     },
     dump(){
-      console.log(this.$refs)
       for(let c of this.cards){
         console.log(JSON.stringify(c.props.initialize))
       }
@@ -310,17 +168,14 @@ export default {
       for(let c of this.cards){
         config.push(JSON.stringify(c.props.initialize))
       }
-      console.log("saveToStorage",config)
       localStorage.setItem('dashboard', btoa(JSON.stringify(config)))
     },
     updateCard(item,data){
-      console.log(item,data)
       // When a card is configured the changes are stored back in the props
       item.props.initialize = JSON.parse(data)
       this.saveToStorage()
     },
     removeCard(item){
-      console.log("remove",item)
       this.startOrder = Object.assign([],this.cards) // array of original starting order
       this.cards = []
       this.$nextTick().then(()=>{
@@ -331,9 +186,7 @@ export default {
       })
     },
     duplicateCard(item,data){
-      console.log("duplicate",item)
       let index=this.cards.indexOf(item)
-      // console.log(this.$refs.card[index].getSetup())
       let copy={
         id : this.cards.length,
         name: item.name,
@@ -342,7 +195,6 @@ export default {
         }
       }
       copy.props.initialize.options.text += ' Copy'
-      console.log("copy",copy)
       this.startOrder = Object.assign([],this.cards) // array of original starting order
       this.cards = []
       this.$nextTick().then(()=>{
@@ -355,50 +207,10 @@ export default {
     },
     draggableitem(item){
       let r='draggable'
-      if (this.is_touch_device()){
-        r+=' disableevents'
-      }
       if (item.blank){
         r+=' grey lighten-2'
       }
       return r
-    },
-    touchstart(e){
-      // Setup a slight delay to avoid accidental moving of items when trying to scroll. So touch devices need to hold the item for a fraction
-      // of a second before it gets 'picked up'.
-      this.pickDelay = setTimeout(()=>{
-        this.touchDrag=true
-        e.clientX = e.changedTouches[0].clientX
-        e.clientY = e.changedTouches[0].clientY
-        this.touchStartX = e.clientX
-        this.touchStartY = e.clientY
-        this.mousedown(e)
-      },200)
-    },
-    touchend(e){
-      clearTimeout(this.pickDelay)
-      e.clientX = e.changedTouches[0].clientX
-      e.clientY = e.changedTouches[0].clientY
-      this.mouseup(e)
-      this.touchDrag=false
-    },
-    touchmove(e){
-      if (this.touchDrag){
-        // Definitely dragging and not scrolling
-        e.clientX = e.changedTouches[0].clientX
-        e.clientY = e.changedTouches[0].clientY
-        this.mousemove(e)
-        // Stop scrolling by preventing default propagation
-        e.preventDefault()
-      } else {
-        let dx = e.changedTouches[0].clientX-this.touchStartX
-        let dy = e.changedTouches[0].clientY-this.touchStartY
-        let dist = Math.sqrt(dx*dx+dy*dy)
-        if (dist>20){
-          // If we've moved more than the dist before the timer runs out we must be scrolling so cancel the timer and allow the event to propagate
-          clearTimeout(this.pickDelay)
-        }
-      }
     },
     getBox(e){
       let x=e.clientX+window.scrollX
@@ -416,9 +228,7 @@ export default {
         if (found && found != this.currentIndex){
           this.newIndex = found
           // Position has changed
-          // let newcards = this.startOrder.filter((x,i) => i != this.startIndex)
-          // newcards.splice(found,0,{ blank:true }) // insert blank
-
+          // Update cards with the new order and vue updates visually
           this.cards = []
           this.$nextTick().then(()=>{
             this.cards = this.startOrder.filter((x,i) => i != this.startIndex)
@@ -428,8 +238,6 @@ export default {
             }) // insert blank
           })
 
-          // Update cards with the new order and vue updates visually
-//          this.cards = newcards
           this.currentIndex = found
         }
       }
@@ -469,7 +277,6 @@ export default {
           this.newIndex = this.startIndex
         }
         this.cards.splice(this.newIndex,1,this.draggedItem) // delete blank and insert original item
-//        localStorage.setItem('cardOrder', this.cards.map(x => x.id)) // save the new order in local storage
         this.draggedItem = null
         this.collisionBoxes = []
         this.$nextTick().then(()=>{
@@ -477,19 +284,7 @@ export default {
         })
       }
     },
-    is_touch_device() {
-        var prefixes = ' -webkit- -moz- -o- -ms- '.split(' ');
-        var mq = function (query) {
-            return window.matchMedia(query).matches;
-        }
-        if (('ontouchstart' in window) || window.DocumentTouch) {
-            return true;
-        }
-        // include the 'heartz' as a way to have a non matching MQ to help terminate the join
-        // https://git.io/vznFH
-        var query = ['(', prefixes.join('touch-enabled),('), 'heartz', ')'].join('');
-        return mq(query);
-    }    
+  
   }
 };
 </script>

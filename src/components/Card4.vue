@@ -3,31 +3,79 @@
         :class="getCardClass"
         @mouseenter="addClass()"
         @mouseleave="removeClass()"
+        dark
         >
+        <v-menu :close-on-content-click=false left v-model="popup">
+        <template v-slot:activator="{ on, attrs }">
+            <v-icon v-bind="attrs" v-on="on" @mousedown.stop @mouseup.stop class="cog ml-auto">mdi-cog</v-icon>
+        </template>
+
+            <v-card dense>
+                <v-list>
+                <v-list-item>
+                    <v-list-item-content>
+                    <v-list-item-title>Card 4 Options</v-list-item-title>
+                    </v-list-item-content>
+
+                    <v-list-item-action class="d-flex flex-row">
+                        <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-btn
+                                icon
+                                v-bind="attrs"
+                                v-on="on"
+                                >
+                                <v-icon @click="duplicate">mdi-plus-circle-multiple-outline</v-icon>
+                            </v-btn>                    
+                        </template>
+                        <span>Duplicate this card</span>
+                        </v-tooltip>
+                        <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-btn
+                                icon
+                                v-bind="attrs"
+                                v-on="on"
+                                >
+                                <v-icon @click="remove">mdi-delete</v-icon>
+                            </v-btn>                    
+                        </template>
+                        <span>Remove this card</span>
+                        </v-tooltip>
+                    </v-list-item-action>
+                </v-list-item>
+                </v-list>
+
+                <v-divider></v-divider>
+                <v-select
+                :items="items"
+                filled
+                dense
+                label="Filled style"
+                v-model="selectedColour"
+                @change="newBackground"
+                ></v-select>
+                <v-card-actions class="my-0">
+                <v-spacer></v-spacer>
+                <v-btn
+                    color="primary"
+                    text
+                    @click="popup=false"
+                    >
+                    Close
+                </v-btn>
+                </v-card-actions>
+            </v-card>
+
+        </v-menu>            
+
         <v-card-title class="d-flex">
             <div>{{ title }}</div>
-            <v-menu offset-y>
-            <template v-slot:activator="{ on, attrs }">
-                <v-icon v-bind="attrs" v-on="on" @mousedown.stop @mouseup.stop class="cog ml-auto">mdi-cog</v-icon>
-            </template>
-            <v-list dense
-              >
-              <v-list-item-group
-                dark
-                >
-                <v-list-item
-                v-for="(item, index) in options"
-                :key="index"
-                @click="callfnc(item.fnc)"
-                >
-                <v-list-item-title>{{ item.title }}</v-list-item-title>
-                </v-list-item>
-              </v-list-item-group>
-            </v-list>
-            </v-menu>            
         </v-card-title>
         <v-card-text>
-            {{ text }}
+            <div v-for="(item,index) in list" :key="index">
+                {{ item }}
+            </div>
         </v-card-text>
     </v-card>
 </template>
@@ -37,24 +85,31 @@ export default {
     name:'Card4',
     props: ['initialize'],
     data: () => ({
+        popup:false,
+        selectedColour: null,
         cogitem: null,
         cogClass: '',
         title: '',
         text: '',
         background: null,
-        cols:{cols:12,md:6,lg:4},
-        options: [
-            {title: "Configure", fnc: "config"},
-            {title: "Duplicate", fnc: "duplicate"},
-            {title: "Remove", fnc: "remove"},
-        ]
+        list: [],
+        cols:{cols:12,lg:4},
+        items: ['deep-orange lighten-4', 'brown darken-2', 'blue-grey darken-3'],
     }),
     mounted(){
         console.log("mounted",JSON.stringify(this.initialize))
+        if (this.initialize.options.list){
+            this.list = this.initialize.options.list
+        } else {
+            this.list=[]
+            for(let i=0;i<10;i++){
+                this.list.push(Math.random()*1000)
+            }
+        }
         if (this.initialize.cols) this.cols = this.initialize.cols
-        this.title = this.initialize.options.title?  this.initialize.options.title:'Card 4'
-        this.text = this.initialize.options.text?  this.initialize.options.text:'Card 4 text'
-        this.background = this.initialize.options.background?  this.initialize.options.background:'purple'
+        this.title = this.initialize.options.title?  this.initialize.options.title:'Card 4 Title'
+        this.text = this.initialize.options.text?  this.initialize.options.text:'Card 4 Text'
+        this.background = this.initialize.options.background?  this.initialize.options.background:'deep-orange lighten-4'
         // Need to send the setup straight back after it's mounted
         this.$emit("update", this.getSetup())
     },
@@ -64,6 +119,13 @@ export default {
         },
     },
     methods: {
+        newBackground(){
+            this.background = this.selectedColour
+            this.update()
+        },
+        update(){
+            this.$emit("update", this.getSetup())
+        },
         getSetup(){
             return JSON.stringify({
                 name: this.$options.name,
@@ -71,7 +133,8 @@ export default {
                 options: {
                     title: this.title,
                     text: this.text,
-                    background: this.background
+                    background: this.background,
+                    list: this.list
                 }
             })
         },
@@ -84,11 +147,6 @@ export default {
         callfnc(f){
             this[f]()
         },
-        config(){
-            this.background = 'secondary'
-            this.cols = {cols:6,md:2}
-            this.$emit("update", this.getSetup())
-        },
         duplicate(){
             this.$emit("duplicate", this.getSetup())
         },
@@ -100,6 +158,9 @@ export default {
 </script>
 <style scoped>
 .cog{
+  position: absolute;
+  right: 8px;
+  top: 8px;
   cursor: -webkit-pointer;
   cursor: pointer;
   opacity: 0;
