@@ -35,6 +35,8 @@
             >
             <v-card
               ref="cards"
+              tile
+              flat
               :style="item.blank?`width:${draggedItemInfo.width}px;height:${draggedItemInfo.height}px;`:''"
               :class="draggableitem(item)"
               >
@@ -65,6 +67,7 @@ const Card1 = () => import('./components/Card1')
 const Card2 = () => import('./components/Card2')
 const Card3 = () => import('./components/Card3')
 const Card4 = () => import('./components/Card4')
+const CardSpacer = () => import('./components/CardSpacer')
 
 export default {
   name: 'App',
@@ -77,6 +80,7 @@ export default {
       { title: 'Card2' , name: 'Card2', cols:{cols:12,md:6}},
       { title: 'Card3' , name: 'Card3', cols:{cols:12}},
       { title: 'Card4' , name: 'Card4', cols:{cols:12,lg:4}},
+      { title: 'Spacer' , name: 'CardSpacer', cols:{cols:12}},
     ],
     cards: [
       {
@@ -139,6 +143,7 @@ export default {
         case 'Card2' : r=Card2; break;
         case 'Card3' : r=Card3; break;
         case 'Card4' : r=Card4; break;
+        case 'CardSpacer' : r=CardSpacer; break;
       }
       return r
     },

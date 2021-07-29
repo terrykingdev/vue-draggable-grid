@@ -25,6 +25,30 @@
                                 v-bind="attrs"
                                 v-on="on"
                                 >
+                                <v-icon @click="reduceWidth">mdi-minus-circle</v-icon>
+                            </v-btn>                    
+                        </template>
+                        <span>Reduce Width</span>
+                        </v-tooltip>
+                        <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-btn
+                                icon
+                                v-bind="attrs"
+                                v-on="on"
+                                >
+                                <v-icon @click="increaseWidth">mdi-plus-circle</v-icon>
+                            </v-btn>                    
+                        </template>
+                        <span>Increase Width</span>
+                        </v-tooltip>
+                        <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-btn
+                                icon
+                                v-bind="attrs"
+                                v-on="on"
+                                >
                                 <v-icon @click="duplicate">mdi-plus-circle-multiple-outline</v-icon>
                             </v-btn>                    
                         </template>
@@ -83,6 +107,7 @@ export default {
     name:'Card1',
     props: ['initialize'],
     data: () => ({
+        colOrder: ['cols','xs','sm','md','lg','xl'],
         popup:false,
         selectedColour: null,
         cogitem: null,
@@ -108,6 +133,41 @@ export default {
         },
     },
     methods: {
+        reduceWidth(){
+            let bp=this.$vuetify.breakpoint.name
+            let currentCols=this.cols[bp]
+            if (!this.cols[bp]){
+                let i=this.colOrder.indexOf(bp)
+                do{
+                    i--
+                } while (!this.cols[this.colOrder[i]] && i>0)
+                currentCols = this.cols[this.colOrder[i]]
+            }
+            console.log(currentCols)
+            if (currentCols>1){
+                currentCols--
+            }
+            this.cols[bp]=currentCols
+            this.update()
+        },
+        increaseWidth(){
+            console.log(this.$vuetify.breakpoint.name)
+            let bp=this.$vuetify.breakpoint.name
+            let currentCols=this.cols[bp]
+            if (!this.cols[bp]){
+                let i=this.colOrder.indexOf(bp)
+                do{
+                    i--
+                } while (!this.cols[this.colOrder[i]] && i>0)
+                currentCols = this.cols[this.colOrder[i]]
+            }
+            console.log(currentCols)
+            if (currentCols<12){
+                currentCols++
+            }
+            this.cols[bp]=currentCols
+            this.update()            
+        },
         newBackground(){
             this.background = this.selectedColour
             this.update()
