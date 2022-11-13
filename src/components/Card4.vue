@@ -94,7 +94,7 @@ export default {
         background: null,
         list: [],
         cols:{cols:12,lg:4},
-        items: ['deep-orange lighten-4', 'brown darken-2', 'blue-grey darken-3'],
+        items: ['deep-orange lighten-1', 'brown darken-2', 'blue-grey darken-3'],
     }),
     mounted(){
         console.log("mounted",JSON.stringify(this.initialize))
@@ -111,6 +111,13 @@ export default {
         this.text = this.initialize.options.text?  this.initialize.options.text:'Card 4 Text'
         this.background = this.initialize.options.background?  this.initialize.options.background:'deep-orange lighten-4'
         // Need to send the setup straight back after it's mounted
+        if (this.initialize.refresh){
+            this.list=[]
+            for(let i=0;i<10;i++){
+                this.list.push(Math.random()*1000)
+            }
+            this.initialize.refresh=false
+        }
         this.$emit("update", this.getSetup())
     },
     computed:{

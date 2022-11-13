@@ -100,6 +100,10 @@ export default {
         this.text = this.initialize.options.text?  this.initialize.options.text:'Card 3 Text'
         this.background = this.initialize.options.background?  this.initialize.options.background:'teal'
         // Need to send the setup straight back after it's mounted
+        if (this.initialize.refresh){
+            this.text = "Card text 3: "+Date.now()
+            this.initialize.refresh=false
+        }
         this.$emit("update", this.getSetup())
     },
     computed:{

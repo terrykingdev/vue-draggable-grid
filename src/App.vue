@@ -1,7 +1,8 @@
 <template>
   <v-app>
     <v-container>
-      <v-btn @click="dump">Dump</v-btn>
+      <v-btn @click="dump" class="mr-2">Dump</v-btn>
+      <v-btn @click="refresh" class="mr-2">Refresh Components</v-btn>
       <v-menu offset-y>
         <template v-slot:activator="{ on, attrs }">
           <v-btn
@@ -16,7 +17,6 @@
         <v-list dense
           >
           <v-list-item-group
-            dark
             >
             <v-list-item
             v-for="(item, index) in addlist"
@@ -110,6 +110,7 @@ export default {
     draggedItem: null,
     draggedItemInfo: null,
     pickDelay: null,
+    componentData: [],
   }),
   mounted(){
     // Get the custom order from localStorage
@@ -124,6 +125,7 @@ export default {
           name: init.name,
           props: {
             initialize:{
+              // refresh: true, // tell component to refresh
               cols: init.cols,
               options: init.options
             }
@@ -136,6 +138,18 @@ export default {
   computed: {
   },
   methods: {
+    refresh(){
+      console.log("refresh")
+      let newCards=[]
+      for(let c of this.cards){
+        c.props.initialize.refresh=true
+        newCards.push(c)
+      }
+      this.cards=[]
+      this.$nextTick().then(()=>{
+        this.cards=newCards
+      })      
+    },
     getComponent(name){
       let r
       switch (name){
@@ -167,6 +181,7 @@ export default {
       for(let c of this.cards){
         console.log(JSON.stringify(c.props.initialize))
       }
+      console.log(this.$refs.cards[0])
     },
     saveToStorage(){
       let config = []
@@ -261,6 +276,8 @@ export default {
         this.currentIndex = this.startIndex
         this.newIndex = this.startIndex
         this.draggedItem = this.cards.splice(this.startIndex,1)[0] // remove the item clicked on and assign it to the dragged item
+        this.draggedItem.props.data={}
+        console.log("draggedItem",this.draggedItem)
         let box = this.collisionBoxes[this.startIndex]
         this.draggedItemInfo = {
           width: box.width,

@@ -3,6 +3,7 @@ import App from './App.vue'
 import vuetify from './plugins/vuetify';
 
 Vue.config.productionTip = false
+export const bus = new Vue();
 
 new Vue({
   vuetify,

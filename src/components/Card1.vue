@@ -105,7 +105,7 @@
 <script>
 export default {
     name:'Card1',
-    props: ['initialize'],
+    props: ['initialize','data'],
     data: () => ({
         colOrder: ['cols','xs','sm','md','lg','xl'],
         popup:false,
@@ -120,11 +120,19 @@ export default {
     }),
     mounted(){
         console.log("mounted",JSON.stringify(this.initialize))
+        if(this.data){
+            console.log("object has setup data")
+        }
         if (this.initialize.cols) this.cols = this.initialize.cols
         this.title = this.initialize.options.title?  this.initialize.options.title:'No title'
         this.text = this.initialize.options.text?  this.initialize.options.text:'No text'
         this.background = this.initialize.options.background?  this.initialize.options.background:'primary'
         // Need to send the setup straight back after it's mounted
+        if (this.initialize.refresh){
+            console.log("Component needs to refresh")
+            this.text = "Card text 1: "+Date.now()
+            this.initialize.refresh=false
+        }
         this.$emit("update", this.getSetup())
     },
     computed:{
