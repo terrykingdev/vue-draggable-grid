@@ -94,8 +94,8 @@ export default {
               lg:4
             },
             options:{
-              title:'Title 1',
-              text:'Item 1 cols:12, md:6, lg:4',
+              title:'Card Title 1',
+              text:'Initial text',
               background: 'red'
             }
           }
@@ -111,10 +111,11 @@ export default {
     draggedItemInfo: null,
     pickDelay: null,
     componentData: [],
+    dashboardName: 'testdashboard'
   }),
   mounted(){
     // Get the custom order from localStorage
-    let config=localStorage.getItem('dashboard')
+    let config=localStorage.getItem(this.dashboardName)
     if (config){
       let configData = JSON.parse(atob(config))
       this.cards = []
@@ -125,7 +126,7 @@ export default {
           name: init.name,
           props: {
             initialize:{
-              // refresh: true, // tell component to refresh
+              refresh: true, // tell component to refresh
               cols: init.cols,
               options: init.options
             }
@@ -188,7 +189,7 @@ export default {
       for(let c of this.cards){
         config.push(JSON.stringify(c.props.initialize))
       }
-      localStorage.setItem('dashboard', btoa(JSON.stringify(config)))
+      localStorage.setItem(this.dashboardName, btoa(JSON.stringify(config)))
     },
     updateCard(item,data){
       // When a card is configured the changes are stored back in the props

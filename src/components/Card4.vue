@@ -109,7 +109,7 @@ export default {
         if (this.initialize.cols) this.cols = this.initialize.cols
         this.title = this.initialize.options.title?  this.initialize.options.title:'Card 4 Title'
         this.text = this.initialize.options.text?  this.initialize.options.text:'Card 4 Text'
-        this.background = this.initialize.options.background?  this.initialize.options.background:'deep-orange lighten-4'
+        this.background = this.initialize.options.background?  this.initialize.options.background:'deep-orange lighten-1'
         // Need to send the setup straight back after it's mounted
         if (this.initialize.refresh){
             this.list=[]

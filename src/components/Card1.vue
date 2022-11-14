@@ -120,11 +120,8 @@ export default {
     }),
     mounted(){
         console.log("mounted",JSON.stringify(this.initialize))
-        if(this.data){
-            console.log("object has setup data")
-        }
         if (this.initialize.cols) this.cols = this.initialize.cols
-        this.title = this.initialize.options.title?  this.initialize.options.title:'No title'
+        this.title = this.initialize.options.title?  this.initialize.options.title:'Card 1 Title'
         this.text = this.initialize.options.text?  this.initialize.options.text:'No text'
         this.background = this.initialize.options.background?  this.initialize.options.background:'primary'
         // Need to send the setup straight back after it's mounted
