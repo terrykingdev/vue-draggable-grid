@@ -28,51 +28,18 @@
           </v-list-item-group>
         </v-list>
       </v-menu>
-      <v-row @mousemove='mousemove' @mousedown='mousedown' @mouseup='mouseup'>
-        <v-col
-            v-for="(item,index) in cards" :key="index"
-            v-bind="item.props.initialize.cols"
-            >
-            <v-card
-              ref="cards"
-              tile
-              flat
-              :style="item.blank?`width:${draggedItemInfo.width}px;height:${draggedItemInfo.height}px;`:''"
-              :class="draggableitem(item)"
-              >
-                <component v-if="!item.blank" :is="getComponent(item.name)" v-bind="item.props" v-on:remove="removeCard(item)" v-on:duplicate="duplicateCard(item,...arguments)" v-on:update="updateCard(item,...arguments)"/>
-            </v-card>    
-        </v-col>
-        <v-card
-          v-if="draggedItem"
-          class="draggeditem"
-          :style="`position:absolute;left:${draggedItemInfo.posX}px;top:${draggedItemInfo.posY}px;width:${draggedItemInfo.width}px;height:${draggedItemInfo.height}px;`"
-          elevation="15"
-          >
-            <component :is="getComponent(draggedItem.name)" v-bind="draggedItem.props"/>
-        </v-card>
-      </v-row>
-
+      <widget-dashboard @redraw="redrawWidgets" @update="updateWidgets" :widgets="cards"></widget-dashboard>
     </v-container>
-    <!-- <div
-      class="overlay"
-      v-for="(box,index) in collisionBoxes" :key="index"
-      :style="`left:${box.left}px;top:${box.top}px;width:${box.width}px;height:${box.height}px;`"
-      ></div> -->
   </v-app>
 </template>
 
 <script>
-const Card1 = () => import('./components/Card1')
-const Card2 = () => import('./components/Card2')
-const Card3 = () => import('./components/Card3')
-const Card4 = () => import('./components/Card4')
-const CardSpacer = () => import('./components/CardSpacer')
+import WidgetDashboard from './components/WidgetDashboard.vue'
 
 export default {
   name: 'App',
   components: {
-
+    WidgetDashboard
   },  
   data: () => ({
     addlist:[
@@ -83,34 +50,25 @@ export default {
       { title: 'Spacer' , name: 'CardSpacer', cols:{cols:12}},
     ],
     cards: [
-      {
-        id:0,
-        name: 'Card1',
-        props: {
-          initialize: {
-            cols:{
-              cols:12,
-              md:6,
-              lg:4
-            },
-            options:{
-              title:'Card Title 1',
-              text:'Initial text',
-              background: 'red'
-            }
-          }
-        }
-      },
+      // {
+      //   name: 'Card1',
+      //   props: {
+      //     initialize: {
+      //       cols:{
+      //         cols:12,
+      //         md:6,
+      //         lg:4
+      //       },
+      //       options:{
+      //         title:'Card Title 1',
+      //         text:'Initial text',
+      //         background: 'red'
+      //       }
+      //     }
+      //   }
+      // },
     ],
-    collisionBoxes: [],
-    startOrder: [],
-    startIndex: null,
-    currentIndex: null,
-    newIndex: -1,
-    draggedItem: null,
-    draggedItemInfo: null,
     pickDelay: null,
-    componentData: [],
     dashboardName: 'testdashboard'
   }),
   mounted(){
@@ -118,6 +76,7 @@ export default {
     let config=localStorage.getItem(this.dashboardName)
     if (config){
       let configData = JSON.parse(atob(config))
+      console.log("loading dashboard",configData)
       this.cards = []
       for(let data of configData){
         let init = JSON.parse(data)
@@ -126,7 +85,7 @@ export default {
           name: init.name,
           props: {
             initialize:{
-              refresh: true, // tell component to refresh
+              // refresh: true, // tell component to refresh
               cols: init.cols,
               options: init.options
             }
@@ -139,6 +98,20 @@ export default {
   computed: {
   },
   methods: {
+    redrawWidgets(widgets){
+      this.cards=[]
+      this.$nextTick(()=>{
+        this.cards=widgets
+        this.saveToStorage()
+      })      
+    },
+    updateWidgets(newwidgets,save){
+      console.log("updateWidgets",newwidgets)
+      this.cards=newwidgets
+        if (save){
+          this.saveToStorage()
+        }
+    },
     refresh(){
       console.log("refresh")
       let newCards=[]
@@ -147,167 +120,39 @@ export default {
         newCards.push(c)
       }
       this.cards=[]
-      this.$nextTick().then(()=>{
+      this.$nextTick(()=>{
         this.cards=newCards
       })      
     },
-    getComponent(name){
-      let r
-      switch (name){
-        case 'Card1' : r=Card1; break;
-        case 'Card2' : r=Card2; break;
-        case 'Card3' : r=Card3; break;
-        case 'Card4' : r=Card4; break;
-        case 'CardSpacer' : r=CardSpacer; break;
-      }
-      return r
-    },
     addCard(item){
       let newCard={
-        id : this.cards.length,
         name: item.name,
         props: {
           initialize: {
+            save: true,  // when adding, use the save flag so the widgets are saved after it's created
+            refresh: true, // ensure the first time that all of the components private data is calculated
             cols: item.cols,
             options: {}
           }
         }
       }
       this.cards.push(newCard)
-      this.$nextTick().then(()=>{
-        this.saveToStorage()
-      })
     },
     dump(){
+      console.log("dump")
       for(let c of this.cards){
         console.log(JSON.stringify(c.props.initialize))
       }
-      console.log(this.$refs.cards[0])
     },
     saveToStorage(){
       let config = []
       for(let c of this.cards){
         config.push(JSON.stringify(c.props.initialize))
       }
+      console.log("saving dashboard",config)
       localStorage.setItem(this.dashboardName, btoa(JSON.stringify(config)))
     },
-    updateCard(item,data){
-      // When a card is configured the changes are stored back in the props
-      item.props.initialize = JSON.parse(data)
-      this.saveToStorage()
-    },
-    removeCard(item){
-      this.startOrder = Object.assign([],this.cards) // array of original starting order
-      this.cards = []
-      this.$nextTick().then(()=>{
-        this.cards = this.startOrder.filter(c => c!=item)
-        this.$nextTick().then(()=>{
-          this.saveToStorage()
-        })
-      })
-    },
-    duplicateCard(item,data){
-      let index=this.cards.indexOf(item)
-      let copy={
-        id : this.cards.length,
-        name: item.name,
-        props: {
-          initialize: JSON.parse(data)
-        }
-      }
-      copy.props.initialize.options.text += ' Copy'
-      this.startOrder = Object.assign([],this.cards) // array of original starting order
-      this.cards = []
-      this.$nextTick().then(()=>{
-        this.cards = this.startOrder
-        this.cards.splice(index+1,0,copy)
-        this.$nextTick().then(()=>{
-          this.saveToStorage()
-        })
-      })
-    },
-    draggableitem(item){
-      let r='draggable'
-      if (item.blank){
-        r+=' grey lighten-2'
-      }
-      return r
-    },
-    getBox(e){
-      let x=e.clientX+window.scrollX
-      let y=e.clientY+window.scrollY
-        let found = this.collisionBoxes.findIndex(box => x >= box.left && x <= box.right && y >= box.top && y <= box.bottom)
-        // Why to a string? Strange behaviour when it isn't, need to look into it.
-        return found>=0?found.toString():null
-    },
-    mousemove(e){
-      if (this.draggedItem){
-        this.draggedItemInfo.posX = e.clientX-this.draggedItemInfo.offsetX
-        this.draggedItemInfo.posY = e.clientY-this.draggedItemInfo.offsetY
-        // Get the box your mouse is currently over
-        let found = this.getBox(e)
-        if (found && found != this.currentIndex){
-          this.newIndex = found
-          // Position has changed
-          // Update cards with the new order and vue updates visually
-          this.cards = []
-          this.$nextTick().then(()=>{
-            this.cards = this.startOrder.filter((x,i) => i != this.startIndex)
-            this.cards.splice(found,0,{
-              blank:true,
-              props: this.startOrder[this.startIndex].props
-            }) // insert blank
-          })
-
-          this.currentIndex = found
-        }
-      }
-    },
-    mousedown(e){
-      // Cycle through the column grid using $refs and get the elements bounding box coordinates
-      // The $refs.cards order might not be in the correct order but doesn't matter
-      this.collisionBoxes = this.$refs.cards.map(x => {
-        let bb=x.$el.getBoundingClientRect()
-        return {left:bb.left, top:bb.top+window.scrollY, right:bb.right, bottom:bb.bottom+window.scrollY, width:bb.width, height:bb.height}
-      }) // array of box collisions
-      this.startOrder = Object.assign([],this.cards) // array of original starting order
-      this.startIndex = this.getBox(e)
-      if (this.startIndex){
-        // Clicked in a valid box
-        this.currentIndex = this.startIndex
-        this.newIndex = this.startIndex
-        this.draggedItem = this.cards.splice(this.startIndex,1)[0] // remove the item clicked on and assign it to the dragged item
-        this.draggedItem.props.data={}
-        console.log("draggedItem",this.draggedItem)
-        let box = this.collisionBoxes[this.startIndex]
-        this.draggedItemInfo = {
-          width: box.width,
-          height: box.height,
-          offsetX: e.clientX-box.left,
-          offsetY: e.clientY-box.top,
-          posX: e.clientX-(e.clientX-box.left),
-          posY: e.clientY-(e.clientY-box.top)
-        }
-        this.cards.splice(this.startIndex,0,{
-          blank:true,
-          props: this.startOrder[this.startIndex].props
-        }) // insert blank
-      }
-    },
-    mouseup(){
-      if (this.draggedItem){
-        if (!this.newIndex){
-          this.newIndex = this.startIndex
-        }
-        this.cards.splice(this.newIndex,1,this.draggedItem) // delete blank and insert original item
-        this.draggedItem = null
-        this.collisionBoxes = []
-        this.$nextTick().then(()=>{
-          this.saveToStorage()
-        })
-      }
-    },
-  
+ 
   }
 };
 </script>

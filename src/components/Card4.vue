@@ -25,6 +25,30 @@
                                 v-bind="attrs"
                                 v-on="on"
                                 >
+                                <v-icon @click="reduceWidth">mdi-minus-circle</v-icon>
+                            </v-btn>                    
+                        </template>
+                        <span>Reduce Width</span>
+                        </v-tooltip>
+                        <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-btn
+                                icon
+                                v-bind="attrs"
+                                v-on="on"
+                                >
+                                <v-icon @click="increaseWidth">mdi-plus-circle</v-icon>
+                            </v-btn>                    
+                        </template>
+                        <span>Increase Width</span>
+                        </v-tooltip>
+                        <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-btn
+                                icon
+                                v-bind="attrs"
+                                v-on="on"
+                                >
                                 <v-icon @click="duplicate">mdi-plus-circle-multiple-outline</v-icon>
                             </v-btn>                    
                         </template>
@@ -93,32 +117,22 @@ export default {
         text: '',
         background: null,
         list: [],
-        cols:{cols:12,lg:4},
+        cols:{cols:12,md:6,lg:4,xl:1},
+        colOrder: ['cols','xs','sm','md','lg','xl'],   
         items: ['deep-orange lighten-1', 'brown darken-2', 'blue-grey darken-3'],
     }),
     mounted(){
         console.log("mounted",JSON.stringify(this.initialize))
-        if (this.initialize.options.list){
-            this.list = this.initialize.options.list
-        } else {
-            this.list=[]
-            for(let i=0;i<10;i++){
-                this.list.push(Math.random()*1000)
-            }
-        }
         if (this.initialize.cols) this.cols = this.initialize.cols
         this.title = this.initialize.options.title?  this.initialize.options.title:'Card 4 Title'
         this.text = this.initialize.options.text?  this.initialize.options.text:'Card 4 Text'
         this.background = this.initialize.options.background?  this.initialize.options.background:'deep-orange lighten-1'
-        // Need to send the setup straight back after it's mounted
-        if (this.initialize.refresh){
-            this.list=[]
-            for(let i=0;i<10;i++){
-                this.list.push(Math.random()*1000)
+            // Need to send the setup straight back after it's mounted
+            if (this.initialize.refresh){
+                this.text = "Card text 4: "+Date.now()
+                this.initialize.refresh=false
             }
-            this.initialize.refresh=false
-        }
-        this.$emit("update", this.getSetup())
+            this.update(this.initialize.save!=undefined) // update parent and save if needed
     },
     computed:{
         getCardClass(){
@@ -126,12 +140,47 @@ export default {
         },
     },
     methods: {
+        reduceWidth(){
+            let bp=this.$vuetify.breakpoint.name
+            let currentCols=this.cols[bp]
+            if (!this.cols[bp]){
+                let i=this.colOrder.indexOf(bp)
+                do{
+                    i--
+                } while (!this.cols[this.colOrder[i]] && i>0)
+                currentCols = this.cols[this.colOrder[i]]
+            }
+            console.log(currentCols)
+            if (currentCols>1){
+                currentCols--
+            }
+            this.cols[bp]=currentCols
+            this.update(true)
+        },
+        increaseWidth(){
+            console.log(this.$vuetify.breakpoint.name)
+            let bp=this.$vuetify.breakpoint.name
+            let currentCols=this.cols[bp]
+            if (!this.cols[bp]){
+                let i=this.colOrder.indexOf(bp)
+                do{
+                    i--
+                } while (!this.cols[this.colOrder[i]] && i>0)
+                currentCols = this.cols[this.colOrder[i]]
+            }
+            console.log(currentCols)
+            if (currentCols<12){
+                currentCols++
+            }
+            this.cols[bp]=currentCols
+            this.update(true)            
+        },        
         newBackground(){
             this.background = this.selectedColour
-            this.update()
+            this.update(true)
         },
-        update(){
-            this.$emit("update", this.getSetup())
+        update(save){
+            this.$emit("update", this.getSetup(),save)
         },
         getSetup(){
             return JSON.stringify({

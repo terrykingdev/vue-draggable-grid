@@ -14,7 +14,35 @@
             <v-card dense>
                 <v-list>
                 <v-list-item>
+                    <v-list-item-content>
+                    <v-list-item-title>Card Spacer Options</v-list-item-title>
+                    </v-list-item-content>
+
                     <v-list-item-action class="d-flex flex-row">
+                        <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-btn
+                                icon
+                                v-bind="attrs"
+                                v-on="on"
+                                >
+                                <v-icon @click="reduceWidth">mdi-minus-circle</v-icon>
+                            </v-btn>                    
+                        </template>
+                        <span>Reduce Width</span>
+                        </v-tooltip>
+                        <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-btn
+                                icon
+                                v-bind="attrs"
+                                v-on="on"
+                                >
+                                <v-icon @click="increaseWidth">mdi-plus-circle</v-icon>
+                            </v-btn>                    
+                        </template>
+                        <span>Increase Width</span>
+                        </v-tooltip>
                         <v-tooltip top>
                         <template v-slot:activator="{ on, attrs }">
                             <v-btn
@@ -57,12 +85,16 @@ export default {
         popup:false,
         cogitem: null,
         cogClass: '',
-        cols:{cols:12},
+        cols:{cols:12,md:12,lg:12,xl:12},
+        colOrder: ['cols','xs','sm','md','lg','xl'],   
     }),
     mounted(){
         console.log("mounted",JSON.stringify(this.initialize))
-        // Need to send the setup straight back after it's mounted
-        this.$emit("update", this.getSetup())
+        if (this.initialize.cols) this.cols = this.initialize.cols
+            if (this.initialize.refresh){
+                this.initialize.refresh=false
+            }
+            this.update(this.initialize.save!=undefined) // update parent and save if needed
     },
     computed:{
         getCardClass(){
@@ -70,8 +102,43 @@ export default {
         },
     },
     methods: {
-        update(){
-            this.$emit("update", this.getSetup())
+        reduceWidth(){
+            let bp=this.$vuetify.breakpoint.name
+            let currentCols=this.cols[bp]
+            if (!this.cols[bp]){
+                let i=this.colOrder.indexOf(bp)
+                do{
+                    i--
+                } while (!this.cols[this.colOrder[i]] && i>0)
+                currentCols = this.cols[this.colOrder[i]]
+            }
+            console.log(currentCols)
+            if (currentCols>1){
+                currentCols--
+            }
+            this.cols[bp]=currentCols
+            this.update(true)
+        },
+        increaseWidth(){
+            console.log(this.$vuetify.breakpoint.name)
+            let bp=this.$vuetify.breakpoint.name
+            let currentCols=this.cols[bp]
+            if (!this.cols[bp]){
+                let i=this.colOrder.indexOf(bp)
+                do{
+                    i--
+                } while (!this.cols[this.colOrder[i]] && i>0)
+                currentCols = this.cols[this.colOrder[i]]
+            }
+            console.log(currentCols)
+            if (currentCols<12){
+                currentCols++
+            }
+            this.cols[bp]=currentCols
+            this.update(true)            
+        },        
+        update(save){
+            this.$emit("update", this.getSetup(), save)
         },
         getSetup(){
             return JSON.stringify({
@@ -110,6 +177,6 @@ export default {
 }
 .showcog .cog{
   opacity: 1;
-  color: white !important;
+  color: black !important;
 }
 </style>

@@ -105,9 +105,8 @@
 <script>
 export default {
     name:'Card1',
-    props: ['initialize','data'],
+    props: ['initialize'],
     data: () => ({
-        colOrder: ['cols','xs','sm','md','lg','xl'],
         popup:false,
         selectedColour: null,
         cogitem: null,
@@ -116,6 +115,7 @@ export default {
         text: '',
         background: null,
         cols:{cols:12,md:6,lg:4,xl:1},
+        colOrder: ['cols','xs','sm','md','lg','xl'],
         items: ['red', 'green', 'blue'],
     }),
     mounted(){
@@ -124,13 +124,13 @@ export default {
         this.title = this.initialize.options.title?  this.initialize.options.title:'Card 1 Title'
         this.text = this.initialize.options.text?  this.initialize.options.text:'No text'
         this.background = this.initialize.options.background?  this.initialize.options.background:'primary'
-        // Need to send the setup straight back after it's mounted
-        if (this.initialize.refresh){
-            console.log("Component needs to refresh")
-            this.text = "Card text 1: "+Date.now()
-            this.initialize.refresh=false
-        }
-        this.$emit("update", this.getSetup())
+            // Need to send the setup straight back after it's mounted
+            if (this.initialize.refresh){
+                console.log("Component needs to refresh")
+                this.text = "Card text 1: "+Date.now()
+                this.initialize.refresh=false
+            }
+            this.update(this.initialize.save!=undefined) // update parent and save if needed
     },
     computed:{
         getCardClass(){
@@ -153,7 +153,7 @@ export default {
                 currentCols--
             }
             this.cols[bp]=currentCols
-            this.update()
+            this.update(true)
         },
         increaseWidth(){
             console.log(this.$vuetify.breakpoint.name)
@@ -171,14 +171,14 @@ export default {
                 currentCols++
             }
             this.cols[bp]=currentCols
-            this.update()            
+            this.update(true)            
         },
         newBackground(){
             this.background = this.selectedColour
-            this.update()
+            this.update(true)
         },
-        update(){
-            this.$emit("update", this.getSetup())
+        update(save){
+            this.$emit("update", this.getSetup(),save)
         },
         getSetup(){
             return JSON.stringify({
