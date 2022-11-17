@@ -135,7 +135,10 @@
 		<colour-picker @change="colourPicked" :show="showPicker"></colour-picker>
 
 		<div class="cardtitle" :style="contrastColour">{{getTitle}}</div>
-		<div class="cardcontent" style="height:calc(100% - 44px)">
+		<div ref="clockcontainer" class="cardcontent" style="height:calc(100% - 26px)">
+            <canvas
+                ref="clock"
+            ></canvas>
 		</div>
     </div>
 </template>
@@ -144,18 +147,18 @@
 import ColourPicker from '../components/ColourPicker'
 
 export default {
-    name:'Card1',
+    name:'WidgetClock',
     props: ['initialize'],
     components: {
         ColourPicker
     },
     data: () => ({
+        drawTimer: null,
         showPicker: false,
         popup:false,
         cogitem: null,
         cogClass: '',
         title: '',
-        text: '',
         background: null,
         height: 268,
         cols:{cols:12,xs:12,sm:12,md:6,lg:4,xl:1},
@@ -168,35 +171,23 @@ export default {
             for(let [k,v] of Object.entries(this.initialize.cols)){
                 this.cols[k]=v
             }
-            console.log(this.cols)
-            // this.cols = this.initialize.cols
         }
         this.height = this.initialize.height ? this.initialize.height : 136
         this.background = this.initialize.background?  this.initialize.background:'#1976d2'
-        this.title = this.initialize.options.title?  this.initialize.options.title:'Card 1 Title'
-        this.text = this.initialize.options.text?  this.initialize.options.text:'No text'
+        this.title = this.initialize.options.title?  this.initialize.options.title:'Clock'
         // Need to send the setup straight back after it's mounted
         if (this.initialize.refresh){
-            this.text = "Card text 1: "+Date.now()
             this.initialize.refresh=false
         }
         this.update(this.initialize.save!=undefined) // update parent and save if needed
+        this.drawTimer=setInterval(this.drawClock,1000)
+    },
+    destroyed(){
+        clearInterval(this.drawTimer)
     },
     computed:{
         getTitle() {
-            return 'Card 1'
-        },
-        currentBreakpoint(){
-            return this.$vuetify.breakpoint.name
-        },
-        getCardClass(){
-            return "card "+this.cogClass
-        },
-        getCardStyle(){
-            return `background-color:${this.background};height:${this.height}px;`
-        },
-        currentWidth(){
-            return this.cols[this.$vuetify.breakpoint.name]
+            return 'Clock'
         },
         contrastColour() {
             let c=this.background
@@ -205,8 +196,110 @@ export default {
             }				
             return this.rgbToLum(c) < 128 ? 'color:white;' : 'color:black;'
         },
+        currentBreakpoint(){
+            return this.$vuetify.breakpoint.name
+        },
+        getCardClass(){
+            return "card pa-2 "+this.cogClass
+        },
+        getCardStyle(){
+            return `background-color:${this.background};height:${this.height}px;`
+        },
+        currentWidth(){
+            return this.cols[this.$vuetify.breakpoint.name]
+        },
+        getWidth(){
+            let clockContainer=this.$refs.clockcontainer
+            console.log("clockcontainer",clockContainer)
+            return 500
+        }
     },
     methods: {
+        drawClock(){
+            let clock=this.$refs.clock
+            let ctx=clock.getContext("2d")
+            ctx.beginPath()
+            this.$nextTick(()=>{
+                let w=clock.clientWidth
+                let h=clock.clientHeight
+                let min=Math.min(w,h)
+                ctx.imageSmoothingEnabled = true
+                ctx.canvas.width=w
+                ctx.canvas.height=h
+                let rad=min/2
+                let x=w/2
+                let y=h/2
+                ctx.lineWidth = 2
+                ctx.strokeStyle = "#00000000"
+                ctx.arc(x,y,rad,0,2*Math.PI)
+                ctx.fillStyle = "white"
+                ctx.fill()
+                ctx.strokeStyle = "#000000"
+                ctx.translate(w/2, h/2)
+                ctx.font = rad*0.15 + "px arial"
+                ctx.fillStyle = "black"
+                ctx.textBaseline="middle"
+                ctx.textAlign="center"
+                for(let num = 1; num < 13; num++){
+                    let ang = num * Math.PI / 6
+                    ctx.rotate(ang)
+                    ctx.translate(0, -rad*0.85)
+                    ctx.rotate(-ang)
+                    ctx.fillText(num.toString(), 0, 0)
+                    ctx.rotate(ang)
+                    ctx.translate(0, rad*0.85)
+                    ctx.rotate(-ang)
+                }
+                for(let num = 0;num<60;num++){
+                    let s=Math.sin(2*Math.PI/60*num)
+                    let c=Math.cos(2*Math.PI/60*num)
+                    let x1=s*(rad*0.98)
+                    let y1=c*(rad*0.98)
+                    let x2=s*(rad*0.95)
+                    let y2=c*(rad*0.95)
+                    if (num%5==0){
+                        ctx.lineWidth=4
+                    } else {
+                        ctx.lineWidth=1
+                    }
+                    ctx.beginPath()
+                    ctx.moveTo(x1,y1)
+                    ctx.lineTo(x2,y2)
+                    ctx.stroke()
+                }
+                let now = new Date()
+                let hour = now.getHours()
+                let minute = now.getMinutes()
+                let second = now.getSeconds()
+                //hour
+                hour=hour%12
+                ctx.beginPath()
+                ctx.arc(0,0,rad*0.05,0,Math.PI*2, false) // outer (filled)
+                ctx.arc(0,0,rad*0.02,0,Math.PI*2, true) // inner (unfills it)
+                ctx.fill()
+                hour=(hour*Math.PI/6)+(minute*Math.PI/(6*60))+(second*Math.PI/(360*60))
+                this.drawHand(ctx, hour, rad*0.05, rad*0.3, rad*0.04)
+                this.drawHand(ctx, hour, rad*0.3, rad*0.7, rad*0.07)
+                //minute
+                minute=(minute*Math.PI/30)+(second*Math.PI/(30*60))
+                this.drawHand(ctx, minute, rad*0.05, rad*0.3, rad*0.04)
+                this.drawHand(ctx, minute, rad*0.3, rad*0.9, rad*0.07)
+                // second
+                ctx.strokeStyle = "red"
+                second=(second*Math.PI/30)
+                this.drawHand(ctx, second, -rad*0.1, rad*0.9, rad*0.02)                
+            })
+        },
+        drawHand(ctx, pos, lengthStart,lengthEnd, width) {
+            ctx.beginPath();
+            ctx.lineWidth = width;
+            ctx.lineCap = "round";
+            ctx.rotate(pos);
+            ctx.moveTo(0, -lengthStart);
+            ctx.lineTo(0, -lengthEnd);
+            ctx.stroke();
+            ctx.rotate(-pos);
+        },
         decHeight() {
             if (this.height > 136) this.height -= 32
             this.update(true)
@@ -231,7 +324,6 @@ export default {
             }
             this.cols[bp]=currentCols
             if (bp=='xs') this.cols.cols=currentCols
-            console.log("COLS",this.cols)
             this.update(true)
         },
         increaseWidth(){
@@ -251,14 +343,12 @@ export default {
             }
             this.cols[bp]=currentCols
             if (bp=='xs') this.cols.cols=currentCols
-            console.log("COLS",this.cols)
             this.update(true)            
         },
         showColourPicker() {
             this.showPicker = true
         },        
         colourPicked(colour) {
-            console.log("colourPicked",colour)
             this.background = colour.value
             this.showPicker = false
             this.update(true)
@@ -273,8 +363,9 @@ export default {
                 return lum
             }
             return 0
-        },
+        },        
         update(save){
+            this.drawClock()
             this.$emit("update", this.getSetup(),save)
         },
         getSetup(){
@@ -285,7 +376,6 @@ export default {
                 height: this.height,
                 options: {
                     title: this.title,
-                    text: this.text,
                 }
             })
         },
@@ -340,5 +430,9 @@ export default {
     display:inline-block;
     position: absolute;
     right: 34px;
+}
+canvas{
+    width:100%;
+    height:100%
 }
 </style>

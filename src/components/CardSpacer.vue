@@ -91,10 +91,10 @@ export default {
     mounted(){
         console.log("mounted",JSON.stringify(this.initialize))
         if (this.initialize.cols) this.cols = this.initialize.cols
-            if (this.initialize.refresh){
-                this.initialize.refresh=false
-            }
-            this.update(this.initialize.save!=undefined) // update parent and save if needed
+        if (this.initialize.refresh){
+            this.initialize.refresh=false
+        }
+        this.update(this.initialize.save!=undefined) // update parent and save if needed
     },
     computed:{
         getCardClass(){

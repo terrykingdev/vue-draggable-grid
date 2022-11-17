@@ -63,33 +63,6 @@
 
                         <v-tooltip top>
                             <template v-slot:activator="{ on, attrs }">
-                                <v-btn icon v-bind="attrs" v-on="on" width="24">
-                                    <v-icon @click="decHeight">mdi-chevron-up-circle</v-icon>
-                                </v-btn>
-                            </template>
-                            <span>Reduce Height</span>
-                        </v-tooltip>
-
-                        <v-tooltip top>
-                            <template v-slot:activator="{ on, attrs }">
-                                <v-btn icon v-bind="attrs" v-on="on" class="cw">
-                                    {{height}}
-                                </v-btn>
-                            </template>
-                            <span>Current Height</span>
-                        </v-tooltip>
-
-                        <v-tooltip top>
-                            <template v-slot:activator="{ on, attrs }">
-                                <v-btn icon v-bind="attrs" v-on="on" width="24">
-                                    <v-icon @click="incHeight">mdi-chevron-down-circle</v-icon>
-                                </v-btn>
-                            </template>
-                            <span>Increase Height</span>
-                        </v-tooltip>
-
-                        <v-tooltip top>
-                            <template v-slot:activator="{ on, attrs }">
 
                                 <v-btn icon v-bind="attrs" v-on="on">
                                     <v-icon @click="showColourPicker">mdi-circle-half-full</v-icon>
@@ -119,6 +92,23 @@
                 </v-list>
 
                 <v-divider></v-divider>
+                <div class="ma-2">
+                    <v-text-field
+                        label="Longitude"
+                        v-model="lon"
+                        hide-details="auto"
+                    ></v-text-field>
+                    <v-text-field
+                        label="Latitude"
+                        v-model="lat"
+                        hide-details="auto"
+                    ></v-text-field>
+                    <v-checkbox
+                        v-model="useImage"
+                        @change="updateImage"
+                        label="Use Image"
+                    ></v-checkbox>
+                </div>
                 <v-card-actions class="my-0">
                 <v-spacer></v-spacer>
                 <v-btn
@@ -135,7 +125,14 @@
 		<colour-picker @change="colourPicked" :show="showPicker"></colour-picker>
 
 		<div class="cardtitle" :style="contrastColour">{{getTitle}}</div>
-		<div class="cardcontent" style="height:calc(100% - 44px)">
+		<div class="cardcontent" style="height:calc(100% - 26px)">
+            <v-img v-if="useImage" :src="image"></v-img>
+            <div v-if="!useImage" :style="contrastColour">
+                <div>Today</div>
+                <v-icon x-large :color="getContrastColour">{{getWeatherIcon}}</v-icon>
+                Low: {{getLow}}° High: {{getHigh}}°
+                <div><v-icon x-large :color="getContrastColour">mdi-weather-windy</v-icon>{{getWind}}</div>
+            </div>
 		</div>
     </div>
 </template>
@@ -144,20 +141,23 @@
 import ColourPicker from '../components/ColourPicker'
 
 export default {
-    name:'Card1',
+    name:'WidgetWeather',
     props: ['initialize'],
     components: {
         ColourPicker
     },
     data: () => ({
+        drawTimer: null,
         showPicker: false,
         popup:false,
         cogitem: null,
         cogClass: '',
-        title: '',
-        text: '',
         background: null,
-        height: 268,
+        image: null,
+        useImage: false,
+        weather: {},
+        lon:0,
+        lat:0,
         cols:{cols:12,xs:12,sm:12,md:6,lg:4,xl:1},
         colOrder: ['cols','xs','sm','md','lg','xl'],
         items: ['red', 'green', 'blue'],
@@ -168,52 +168,126 @@ export default {
             for(let [k,v] of Object.entries(this.initialize.cols)){
                 this.cols[k]=v
             }
-            console.log(this.cols)
-            // this.cols = this.initialize.cols
         }
-        this.height = this.initialize.height ? this.initialize.height : 136
+        this.useImage = this.initialize.useImage?this.initialize.useImage:false
         this.background = this.initialize.background?  this.initialize.background:'#1976d2'
-        this.title = this.initialize.options.title?  this.initialize.options.title:'Card 1 Title'
-        this.text = this.initialize.options.text?  this.initialize.options.text:'No text'
+        this.lon = this.initialize.options.lon?  this.initialize.options.lon:0.90421
+        this.lat = this.initialize.options.lat?  this.initialize.options.lat:51.88921
+        this.image = this.initialize.options.image?this.initialize.options.image:null
+        this.useImage = this.initialize.options.useImage?this.initialize.options.useImage:null
+        this.weather = this.initialize.options.weather?this.initialize.options.weather:{}
         // Need to send the setup straight back after it's mounted
         if (this.initialize.refresh){
-            this.text = "Card text 1: "+Date.now()
+            this.getWeather()
             this.initialize.refresh=false
         }
         this.update(this.initialize.save!=undefined) // update parent and save if needed
     },
+    destroyed(){
+        clearInterval(this.drawTimer)
+    },
     computed:{
+        getLow(){
+            return this.weather.temp2m?this.weather.temp2m.min:'?'
+        },
+        getHigh(){
+            return this.weather.temp2m?this.weather.temp2m.max:'?'
+        },
+        getWind(){
+            const winds=["Calm","Light","Moderate","Fresh","Strong","Gale","Storm","Hurricane"]
+            return winds[this.weather.wind10m_max-1]
+        },
+        getWeatherIcon(){
+            let i=""
+            switch(this.weather.weather){
+                case "clear":
+                case "humid":
+                    i="mdi-weather-sunny"
+                    break;
+                case "lightrain":
+                case "oshower":
+                case "ishower":
+                case "rain":
+                    i="mdi-weather-rainy"
+                    break;
+                case "pcloudy":
+                    i="weather-partly-rainy"
+                    break;
+                case "mcloudy":
+                case "cloudy":
+                    i="mdi-weather-cloudy"
+                    break;    
+                case "lightsnow":
+                case "snow":
+                    i="mdi-weather-snowy"                
+                    break;
+                case "rainsnow":
+                    i="weather-snowy-rainy"
+                    break;
+            }
+            return i
+        },
         getTitle() {
-            return 'Card 1'
+            return 'Weather'
+        },
+        getContrastColour(){
+            let c=this.background
+            if (this.background=='rgba(0,0,0,0)'){
+                c=this.$vuetify.theme.currentTheme.background
+            }				
+            return this.rgbToLum(c) < 128 ? 'white' : 'black'
+        },
+        contrastColour() {
+            return `color:${this.getContrastColour};`
         },
         currentBreakpoint(){
             return this.$vuetify.breakpoint.name
         },
         getCardClass(){
-            return "card "+this.cogClass
+            return "card pa-2 "+this.cogClass
         },
         getCardStyle(){
-            return `background-color:${this.background};height:${this.height}px;`
+            return `background-color:${this.background};`
         },
         currentWidth(){
             return this.cols[this.$vuetify.breakpoint.name]
         },
-        contrastColour() {
-            let c=this.background
-            if (this.background=='rgba(0,0,0,0)'){
-                c=this.$vuetify.theme.currentTheme.background
-            }				
-            return this.rgbToLum(c) < 128 ? 'color:white;' : 'color:black;'
-        },
+        getWidth(){
+            let clockContainer=this.$refs.clockcontainer
+            console.log("clockcontainer",clockContainer)
+            return 500
+        }
     },
     methods: {
-        decHeight() {
-            if (this.height > 136) this.height -= 32
-            this.update(true)
+        updateImage(){
+            this.getWeather()
         },
-        incHeight() {
-            this.height += 32
-            this.update(true)
+        getWeather(){
+            if (this.useImage){
+                let url=`http://www.7timer.info/bin/astro.php?lon=${this.lon}&lat=${this.lat}&ac=0&lang=en&unit=metric&output=internal&tzshift=0`
+                console.log("getWeather",url)
+                fetch(url)
+                .then(response => response.blob())
+                .then(data => {
+                    let reader = new FileReader()
+                    let othis=this
+                    reader.onload = function(){
+                        console.log("reader",this.result)
+                        othis.image=this.result
+                        othis.update(true)                    
+                    }
+                    reader.readAsDataURL(data)
+                })
+            } else {
+                let url=`http://www.7timer.info/bin/api.pl?lon=${this.lon}&lat=${this.lat}&product=civillight&output=json&tzshift=0`
+                console.log("getWeather",url)
+                fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    this.weather=data.dataseries[0]
+                    this.update(true)                    
+                })
+            }
         },
         reduceWidth(){
             let bp=this.$vuetify.breakpoint.name
@@ -231,7 +305,6 @@ export default {
             }
             this.cols[bp]=currentCols
             if (bp=='xs') this.cols.cols=currentCols
-            console.log("COLS",this.cols)
             this.update(true)
         },
         increaseWidth(){
@@ -251,14 +324,12 @@ export default {
             }
             this.cols[bp]=currentCols
             if (bp=='xs') this.cols.cols=currentCols
-            console.log("COLS",this.cols)
             this.update(true)            
         },
         showColourPicker() {
             this.showPicker = true
         },        
         colourPicked(colour) {
-            console.log("colourPicked",colour)
             this.background = colour.value
             this.showPicker = false
             this.update(true)
@@ -273,21 +344,23 @@ export default {
                 return lum
             }
             return 0
-        },
+        },        
         update(save){
             this.$emit("update", this.getSetup(),save)
         },
         getSetup(){
-            return JSON.stringify({
+            let obj={
                 name: this.$options.name,
                 cols: this.cols,
                 background: this.background,
-                height: this.height,
                 options: {
-                    title: this.title,
-                    text: this.text,
+                    image: this.image,
+                    useImage: this.useImage,
+                    weather: this.weather,
                 }
-            })
+            }
+            console.log("getSetup",obj)
+            return JSON.stringify(obj)
         },
         addClass(){
             this.cogClass="showcog"
@@ -332,8 +405,8 @@ export default {
 }
 .cardcontent{
 	text-align:center;
-	font-size:5em;
-    margin-top: -31px;	
+	font-size:1.2em;
+    margin-top: -14px;	
 	padding:6px;
 }
 .cardicon{

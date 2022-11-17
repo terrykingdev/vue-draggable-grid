@@ -16,8 +16,8 @@
         </v-col>
         <v-card
             v-if="draggedItem"
-            class="draggeditem"
             :style="`position:absolute;left:${draggedItemInfo.posX}px;top:${draggedItemInfo.posY}px;width:${draggedItemInfo.width}px;height:${draggedItemInfo.height}px;`"
+            class="draggeditem rounded-xl"
             elevation="15"
             >
             <component :is="getComponent(draggedItem.name)" v-bind="draggedItem.props"/>
@@ -31,16 +31,23 @@
 </template>
 
 <script>
-const Card1 = () => import('../components/Card1')
-const Card2 = () => import('../components/Card2')
-const Card3 = () => import('../components/Card3')
-const Card4 = () => import('../components/Card4')
-const CardSpacer = () => import('../components/CardSpacer')
+
+const WidgetComponents = [
+    { name: 'Card1', component : () => import('../components/Card1') },
+    { name: 'Card2', component : () => import('../components/Card2') },
+    { name: 'Card3', component : () => import('../components/Card3') },
+    { name: 'Card4', component : () => import('../components/Card4') },
+    { name: 'WidgetClock', component : () => import('../components/WidgetClock') },
+    { name: 'WidgetWeather', component : () => import('../components/WidgetWeather') },
+    { name: 'WidgetBored', component : () => import('../components/WidgetBored') },
+    { name: 'CardSpacer', component : () => import('../components/CardSpacer') },
+]
 
 export default {
     name:'WidgetDashboard',
     props: ['widgets'],
     data: () => ({
+        clickTimeout: null,
         collisionBoxes: [],
         draggedItem: null,
         draggedItemInfo: null,
@@ -79,23 +86,16 @@ export default {
                     initialize: JSON.parse(data)
                 }
             }
-            this.startOrder = Object.assign([],this.widgets) // array of original starting order
-            let newwidgets = []
-            newwidgets = this.startOrder
+            let newwidgets = JSON.parse(JSON.stringify(this.widgets))
             newwidgets.splice(index+1,0,copy)
             this.$emit('redraw',newwidgets)
 
         },        
         getComponent(name){
-            let r
-            switch (name){
-                case 'Card1' : r=Card1; break;
-                case 'Card2' : r=Card2; break;
-                case 'Card3' : r=Card3; break;
-                case 'Card4' : r=Card4; break;
-                case 'CardSpacer' : r=CardSpacer; break;
-            }
-            return r
+            return WidgetComponents.filter(c => c.name==name)[0].component
+            // for(let c of WidgetComponents){
+            //     if (c.name==name) return c.component
+            // }
         },
         draggableitem(item){
             let r='draggable'
@@ -112,6 +112,7 @@ export default {
             return found>=0?found.toString():null
         },
         mousemove(e){
+            clearTimeout(this.clickTimeout)            
             if (this.draggedItem){
                 this.draggedItemInfo.posX = e.clientX-this.draggedItemInfo.offsetX
                 this.draggedItemInfo.posY = e.clientY-this.draggedItemInfo.offsetY
@@ -136,37 +137,41 @@ export default {
         mousedown(e){
             // Cycle through the column grid using $refs and get the elements bounding box coordinates
             // The $refs.cards order might not be in the correct order but doesn't matter
-            this.collisionBoxes = this.$refs.widgets.map(x => {
-                let bb=x.$el.getBoundingClientRect()
-                return {left:bb.left, top:bb.top+window.scrollY, right:bb.right, bottom:bb.bottom+window.scrollY, width:bb.width, height:bb.height}
-            }) // array of box collisions
-            this.startOrder = Object.assign([],this.widgets) // array of original starting order
-            this.widgetsCopy = Object.assign([],this.widgets)
-            this.useWidgetsCopy = true
-            this.startIndex = this.getBox(e)
-            if (this.startIndex){
-                // Clicked in a valid box
-                this.currentIndex = this.startIndex
-                this.newIndex = this.startIndex
-                this.draggedItem = this.widgetsCopy.splice(this.startIndex,1)[0] // remove the item clicked on and assign it to the dragged item
-                // this.draggedItem.props.data={}
-                console.log("draggedItem",this.draggedItem)
-                let box = this.collisionBoxes[this.startIndex]
-                this.draggedItemInfo = {
-                    width: box.width,
-                    height: box.height,
-                    offsetX: e.clientX-box.left,
-                    offsetY: e.clientY-box.top,
-                    posX: e.clientX-(e.clientX-box.left),
-                    posY: e.clientY-(e.clientY-box.top)
+            clearTimeout(this.clickTimeout)
+            this.clickTimeout=setTimeout(()=>{
+                this.collisionBoxes = this.$refs.widgets.map(x => {
+                    let bb=x.$el.getBoundingClientRect()
+                    return {left:bb.left, top:bb.top+window.scrollY, right:bb.right, bottom:bb.bottom+window.scrollY, width:bb.width, height:bb.height}
+                }) // array of box collisions
+                this.startOrder = Object.assign([],this.widgets) // array of original starting order
+                this.widgetsCopy = Object.assign([],this.widgets)
+                this.useWidgetsCopy = true
+                this.startIndex = this.getBox(e)
+                if (this.startIndex){
+                    // Clicked in a valid box
+                    this.currentIndex = this.startIndex
+                    this.newIndex = this.startIndex
+                    this.draggedItem = this.widgetsCopy.splice(this.startIndex,1)[0] // remove the item clicked on and assign it to the dragged item
+                    // this.draggedItem.props.data={}
+                    console.log("draggedItem",this.draggedItem)
+                    let box = this.collisionBoxes[this.startIndex]
+                    this.draggedItemInfo = {
+                        width: box.width,
+                        height: box.height,
+                        offsetX: e.clientX-box.left,
+                        offsetY: e.clientY-box.top,
+                        posX: e.clientX-(e.clientX-box.left),
+                        posY: e.clientY-(e.clientY-box.top)
+                    }
+                    this.widgetsCopy.splice(this.startIndex,0,{
+                        blank:true,
+                        props: this.startOrder[this.startIndex].props
+                    }) // insert blank
                 }
-                this.widgetsCopy.splice(this.startIndex,0,{
-                    blank:true,
-                    props: this.startOrder[this.startIndex].props
-                }) // insert blank
-            }
+            },100)
         },
         mouseup(){
+            clearTimeout(this.clickTimeout)
             if (this.draggedItem){
                 if (!this.newIndex){
                     this.newIndex = this.startIndex

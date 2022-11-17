@@ -63,33 +63,6 @@
 
                         <v-tooltip top>
                             <template v-slot:activator="{ on, attrs }">
-                                <v-btn icon v-bind="attrs" v-on="on" width="24">
-                                    <v-icon @click="decHeight">mdi-chevron-up-circle</v-icon>
-                                </v-btn>
-                            </template>
-                            <span>Reduce Height</span>
-                        </v-tooltip>
-
-                        <v-tooltip top>
-                            <template v-slot:activator="{ on, attrs }">
-                                <v-btn icon v-bind="attrs" v-on="on" class="cw">
-                                    {{height}}
-                                </v-btn>
-                            </template>
-                            <span>Current Height</span>
-                        </v-tooltip>
-
-                        <v-tooltip top>
-                            <template v-slot:activator="{ on, attrs }">
-                                <v-btn icon v-bind="attrs" v-on="on" width="24">
-                                    <v-icon @click="incHeight">mdi-chevron-down-circle</v-icon>
-                                </v-btn>
-                            </template>
-                            <span>Increase Height</span>
-                        </v-tooltip>
-
-                        <v-tooltip top>
-                            <template v-slot:activator="{ on, attrs }">
 
                                 <v-btn icon v-bind="attrs" v-on="on">
                                     <v-icon @click="showColourPicker">mdi-circle-half-full</v-icon>
@@ -135,7 +108,8 @@
 		<colour-picker @change="colourPicked" :show="showPicker"></colour-picker>
 
 		<div class="cardtitle" :style="contrastColour">{{getTitle}}</div>
-		<div class="cardcontent" style="height:calc(100% - 44px)">
+		<div class="cardcontent" :style="contrastColour+';height:calc(100% - 26px)'">
+            {{text}}
 		</div>
     </div>
 </template>
@@ -144,20 +118,19 @@
 import ColourPicker from '../components/ColourPicker'
 
 export default {
-    name:'Card1',
+    name:'WidgetBored',
     props: ['initialize'],
     components: {
         ColourPicker
     },
     data: () => ({
+        drawTimer: null,
         showPicker: false,
         popup:false,
         cogitem: null,
         cogClass: '',
-        title: '',
-        text: '',
         background: null,
-        height: 268,
+        text: '',
         cols:{cols:12,xs:12,sm:12,md:6,lg:4,xl:1},
         colOrder: ['cols','xs','sm','md','lg','xl'],
         items: ['red', 'green', 'blue'],
@@ -168,52 +141,56 @@ export default {
             for(let [k,v] of Object.entries(this.initialize.cols)){
                 this.cols[k]=v
             }
-            console.log(this.cols)
-            // this.cols = this.initialize.cols
         }
-        this.height = this.initialize.height ? this.initialize.height : 136
+        this.useImage = this.initialize.useImage?this.initialize.useImage:false
         this.background = this.initialize.background?  this.initialize.background:'#1976d2'
-        this.title = this.initialize.options.title?  this.initialize.options.title:'Card 1 Title'
-        this.text = this.initialize.options.text?  this.initialize.options.text:'No text'
+        this.text = this.initialize.options.text?  this.initialize.options.text:''
         // Need to send the setup straight back after it's mounted
         if (this.initialize.refresh){
-            this.text = "Card text 1: "+Date.now()
+            this.getBored()
             this.initialize.refresh=false
         }
         this.update(this.initialize.save!=undefined) // update parent and save if needed
     },
+    destroyed(){
+        clearInterval(this.drawTimer)
+    },
     computed:{
         getTitle() {
-            return 'Card 1'
+            return 'Bored?'
+        },
+        getContrastColour(){
+            let c=this.background
+            if (this.background=='rgba(0,0,0,0)'){
+                c=this.$vuetify.theme.currentTheme.background
+            }				
+            return this.rgbToLum(c) < 128 ? 'white' : 'black'
+        },
+        contrastColour() {
+            return `color:${this.getContrastColour};`
         },
         currentBreakpoint(){
             return this.$vuetify.breakpoint.name
         },
         getCardClass(){
-            return "card "+this.cogClass
+            return "card pa-2 "+this.cogClass
         },
         getCardStyle(){
-            return `background-color:${this.background};height:${this.height}px;`
+            return `background-color:${this.background};`
         },
         currentWidth(){
             return this.cols[this.$vuetify.breakpoint.name]
         },
-        contrastColour() {
-            let c=this.background
-            if (this.background=='rgba(0,0,0,0)'){
-                c=this.$vuetify.theme.currentTheme.background
-            }				
-            return this.rgbToLum(c) < 128 ? 'color:white;' : 'color:black;'
-        },
     },
     methods: {
-        decHeight() {
-            if (this.height > 136) this.height -= 32
-            this.update(true)
-        },
-        incHeight() {
-            this.height += 32
-            this.update(true)
+        getBored(){
+            fetch('https://www.boredapi.com/api/activity')
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                this.text=data.activity
+                this.update(true)                    
+            })
         },
         reduceWidth(){
             let bp=this.$vuetify.breakpoint.name
@@ -231,7 +208,6 @@ export default {
             }
             this.cols[bp]=currentCols
             if (bp=='xs') this.cols.cols=currentCols
-            console.log("COLS",this.cols)
             this.update(true)
         },
         increaseWidth(){
@@ -251,14 +227,12 @@ export default {
             }
             this.cols[bp]=currentCols
             if (bp=='xs') this.cols.cols=currentCols
-            console.log("COLS",this.cols)
             this.update(true)            
         },
         showColourPicker() {
             this.showPicker = true
         },        
         colourPicked(colour) {
-            console.log("colourPicked",colour)
             this.background = colour.value
             this.showPicker = false
             this.update(true)
@@ -273,21 +247,20 @@ export default {
                 return lum
             }
             return 0
-        },
+        },        
         update(save){
             this.$emit("update", this.getSetup(),save)
         },
         getSetup(){
-            return JSON.stringify({
+            let obj={
                 name: this.$options.name,
                 cols: this.cols,
                 background: this.background,
-                height: this.height,
                 options: {
-                    title: this.title,
                     text: this.text,
                 }
-            })
+            }
+            return JSON.stringify(obj)
         },
         addClass(){
             this.cogClass="showcog"
@@ -332,8 +305,8 @@ export default {
 }
 .cardcontent{
 	text-align:center;
-	font-size:5em;
-    margin-top: -31px;	
+	font-size:1.5em;
+    margin-top: -14px;	
 	padding:6px;
 }
 .cardicon{

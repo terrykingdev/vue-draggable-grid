@@ -1,6 +1,7 @@
 <template>
   <v-app>
     <v-container>
+      <v-btn @click="darkMode" class="mr-2">Toogle Dark Mode</v-btn>
       <v-btn @click="dump" class="mr-2">Dump</v-btn>
       <v-btn @click="refresh" class="mr-2">Refresh Components</v-btn>
       <v-menu offset-y>
@@ -43,10 +44,13 @@ export default {
   },  
   data: () => ({
     addlist:[
-      { title: 'Card1' , name: 'Card1', cols:{cols:12,md:6,lg:4,xl:3}},
+      { title: 'Card1' , name: 'Card1', cols:{xs:6}},
       { title: 'Card2' , name: 'Card2', cols:{cols:12,md:6}},
       { title: 'Card3' , name: 'Card3', cols:{cols:12}},
       { title: 'Card4' , name: 'Card4', cols:{cols:12,lg:4}},
+      { title: 'Clock' , name: 'WidgetClock'},
+      { title: 'Weather' , name: 'WidgetWeather'},
+      { title: 'Bored' , name: 'WidgetBored'},
       { title: 'Spacer' , name: 'CardSpacer', cols:{cols:12}},
     ],
     cards: [
@@ -73,6 +77,7 @@ export default {
   }),
   mounted(){
     // Get the custom order from localStorage
+    this.$vuetify.theme.dark = (localStorage.theme=="true") || false
     let config=localStorage.getItem(this.dashboardName)
     if (config){
       let configData = JSON.parse(atob(config))
@@ -85,8 +90,10 @@ export default {
           name: init.name,
           props: {
             initialize:{
-              // refresh: true, // tell component to refresh
+              refresh: true, // tell component to refresh
               cols: init.cols,
+              background: init.background,
+              height: init.height,
               options: init.options
             }
           }
@@ -105,12 +112,12 @@ export default {
         this.saveToStorage()
       })      
     },
-    updateWidgets(newwidgets,save){
-      console.log("updateWidgets",newwidgets)
-      this.cards=newwidgets
-        if (save){
-          this.saveToStorage()
-        }
+    updateWidgets(widgets,save){
+      console.log("updateWidgets",widgets)
+      this.cards=widgets
+      if (save){
+        this.saveToStorage()
+      }
     },
     refresh(){
       console.log("refresh")
@@ -152,7 +159,10 @@ export default {
       console.log("saving dashboard",config)
       localStorage.setItem(this.dashboardName, btoa(JSON.stringify(config)))
     },
- 
+    darkMode() {
+      this.$vuetify.theme.dark = !this.$vuetify.theme.dark
+      localStorage.theme=this.$vuetify.theme.dark      
+    },
   }
 };
 </script>

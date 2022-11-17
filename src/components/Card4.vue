@@ -10,7 +10,9 @@
             <v-icon v-bind="attrs" v-on="on" @mousedown.stop @mouseup.stop class="cog ml-auto">mdi-cog</v-icon>
         </template>
 
-            <v-card dense>
+            <v-card
+                dense
+            >
                 <v-list>
                 <v-list-item>
                     <v-list-item-content>
@@ -126,17 +128,21 @@ export default {
         if (this.initialize.cols) this.cols = this.initialize.cols
         this.title = this.initialize.options.title?  this.initialize.options.title:'Card 4 Title'
         this.text = this.initialize.options.text?  this.initialize.options.text:'Card 4 Text'
+        this.list = this.initialize.options.list?  this.initialize.options.list:[]
         this.background = this.initialize.options.background?  this.initialize.options.background:'deep-orange lighten-1'
-            // Need to send the setup straight back after it's mounted
-            if (this.initialize.refresh){
-                this.text = "Card text 4: "+Date.now()
-                this.initialize.refresh=false
+        // Need to send the setup straight back after it's mounted
+        if (this.initialize.refresh){
+            this.list=[]
+            for(let i=0;i<10;i++){
+                this.list.push(Math.random())
             }
-            this.update(this.initialize.save!=undefined) // update parent and save if needed
+            this.initialize.refresh=false
+        }
+        this.update(this.initialize.save!=undefined) // update parent and save if needed
     },
     computed:{
         getCardClass(){
-            return this.background+" pa-2 "+this.cogClass
+            return this.background+" rounded-xl pa-2 "+this.cogClass
         },
     },
     methods: {
